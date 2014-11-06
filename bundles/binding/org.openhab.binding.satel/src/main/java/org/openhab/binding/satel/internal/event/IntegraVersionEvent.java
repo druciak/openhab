@@ -42,4 +42,11 @@ public class IntegraVersionEvent extends SatelEvent {
 	public boolean getSettingsInflash() {
 		return this.settingsInFlash;
 	}
+
+	@Override
+	public String toString() {
+		return String.format("IntegraVersionEvent: type = %d, version = %s, language = %d, settingsInFlash = %b", 
+				this.type, this.version, this.language, this.settingsInFlash);
+	}
+	
 }

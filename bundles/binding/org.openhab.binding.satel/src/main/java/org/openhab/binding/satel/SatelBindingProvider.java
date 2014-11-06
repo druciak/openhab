@@ -8,7 +8,6 @@
  */
 package org.openhab.binding.satel;
 
-import org.openhab.core.binding.BindingConfig;
 import org.openhab.core.binding.BindingProvider;
 import org.openhab.core.items.Item;
 
@@ -21,16 +20,16 @@ import org.openhab.core.items.Item;
 public interface SatelBindingProvider extends BindingProvider {
 	
 	/**
-	 * @param itemName
-	 * @return
-	 */
-	BindingConfig getConfig(String itemName);
-	
-	/**
 	 * Returns the {@link Item} with the specified item name. Returns null
 	 * if the item was not found.
 	 * @param itemName the name of the item.
 	 * @return the item.
 	 */
 	Item getItem(String itemName);
+	
+	/**
+	 * @param itemName
+	 * @return
+	 */
+	SatelBindingConfig getItemConfig(String itemName);
 }

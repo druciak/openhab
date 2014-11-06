@@ -8,7 +8,13 @@
  */
 package org.openhab.binding.satel.config;
 
-import org.openhab.core.binding.BindingConfig;
+import org.openhab.binding.satel.SatelBindingConfig;
+import org.openhab.binding.satel.internal.event.IntegraStateEvent;
+import org.openhab.binding.satel.internal.event.SatelEvent;
+import org.openhab.binding.satel.internal.protocol.SatelMessage;
+import org.openhab.binding.satel.internal.protocol.SatelModule.IntegraType;
+import org.openhab.core.items.Item;
+import org.openhab.core.types.Command;
 
 /**
  * TODO document me!
@@ -16,7 +22,7 @@ import org.openhab.core.binding.BindingConfig;
  * @author Krzysztof Goworek
  * @since 1.7.0
  */
-public class IntegraStateBindingConfig implements BindingConfig {
+public class IntegraStateBindingConfig implements SatelBindingConfig {
 
 	public enum ObjectType {
 		input, zone, output, doors;
@@ -61,5 +67,27 @@ public class IntegraStateBindingConfig implements BindingConfig {
 		if (parts.length > 1) {
 			this.objectNumber = Integer.parseInt(parts[1]);
 		}
+	}
+
+	@Override
+	public void updateItem(Item item, SatelEvent event) {
+		if (! (event instanceof IntegraStateEvent)) {
+			return;
+		}
+		
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void receiveCommand(Command command) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public SatelMessage buildRefreshCommand(IntegraType integraType) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

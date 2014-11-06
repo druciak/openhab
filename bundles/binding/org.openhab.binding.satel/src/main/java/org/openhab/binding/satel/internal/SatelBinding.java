@@ -8,17 +8,21 @@
  */
 package org.openhab.binding.satel.internal;
 
+import java.util.ArrayList;
 import java.util.Dictionary;
+import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
+import org.openhab.binding.satel.SatelBindingConfig;
 import org.openhab.binding.satel.SatelBindingProvider;
 import org.openhab.binding.satel.internal.event.EventListener;
-import org.openhab.binding.satel.internal.event.IntegraStateEvent;
 import org.openhab.binding.satel.internal.event.SatelEvent;
 import org.openhab.binding.satel.internal.protocol.Ethm1Module;
 import org.openhab.binding.satel.internal.protocol.IntRSModule;
+import org.openhab.binding.satel.internal.protocol.SatelMessage;
 import org.openhab.binding.satel.internal.protocol.SatelModule;
 import org.openhab.core.binding.AbstractActiveBinding;
+import org.openhab.core.items.Item;
 import org.openhab.core.types.Command;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.cm.ManagedService;
@@ -58,14 +62,32 @@ public class SatelBinding extends AbstractActiveBinding<SatelBindingProvider> im
 	 */
 	@Override
 	public void execute() {
-		// TODO implement me!
 		if (! isProperlyConfigured()) {
 			logger.warn("Binding not properly configured, exiting");
 			return;
 		}
 		
+		if (! this.satelModule.isInitialized()) {
+			logger.debug("Module not initialized yet, skipping refresh");
+			return;
+		}
+		
+		logger.debug("Gathering refresh commands from all items");
+		List<SatelMessage> commands = new ArrayList<SatelMessage>();
 		for (SatelBindingProvider provider : providers) {
-			// TODO: implement me!
+			for (String itemName : provider.getItemNames()) {
+				logger.trace("Getting refresh command from item: {}", itemName);
+				SatelBindingConfig itemConfig = provider.getItemConfig(itemName);
+				SatelMessage message = itemConfig.buildRefreshCommand(this.satelModule.getIntegraType());
+				if (message != null && ! commands.contains(message)) {
+					commands.add(message);
+				}
+			}
+		}
+		
+		logger.trace("Sending {} commands", commands.size());
+		for (SatelMessage message : commands) {
+			this.satelModule.sendCommand(message);
 		}
 	}
 	
@@ -122,8 +144,14 @@ public class SatelBinding extends AbstractActiveBinding<SatelBindingProvider> im
 			return;
 		}
 		
+		if (! this.satelModule.isInitialized()) {
+			logger.debug("Module not initialized yet, ignoring command");
+			return;
+		}
+		
 		for (SatelBindingProvider provider : providers) {
-			// TODO: implement me!
+			SatelBindingConfig itemConfig = provider.getItemConfig(itemName);
+			itemConfig.receiveCommand(command);
 		}
 	}
 
@@ -132,8 +160,14 @@ public class SatelBinding extends AbstractActiveBinding<SatelBindingProvider> im
 	 */
 	@Override
 	public void incomingEvent(SatelEvent event) {
-		if (event instanceof IntegraStateEvent) {
-			// TODO handle event
+		logger.trace("Handling incoming event: {}", event);
+		
+		for (SatelBindingProvider provider : providers) {
+			for (String itemName : provider.getItemNames()) {
+				SatelBindingConfig itemConfig = provider.getItemConfig(itemName);
+				Item item = provider.getItem(itemName);
+				itemConfig.updateItem(item, event);
+			}
 		}
 	}
 	

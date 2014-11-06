@@ -8,11 +8,9 @@
  */
 package org.openhab.binding.satel.internal;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
+import org.openhab.binding.satel.SatelBindingConfig;
 import org.openhab.binding.satel.SatelBindingProvider;
 import org.openhab.binding.satel.config.IntegraStateBindingConfig;
 import org.openhab.core.binding.BindingConfig;
@@ -59,15 +57,10 @@ public class SatelGenericBindingProvider extends AbstractGenericBindingProvider 
 	 */
 	@Override
 	public void processBindingConfiguration(String context, Item item, String bindingConfig) throws BindingConfigParseException {
-		String[] parts = bindingConfig.split(":", 2);		
-		addBindingConfig(item, this.createBindingConfig(parts[0], (parts.length > 1) ? parts[0] : ""));
+		super.processBindingConfiguration(context, item, bindingConfig);
 		
-		Set<Item> items = contextMap.get(context);
-		if (items == null) {
-			items = new HashSet<Item>();
-			contextMap.put(context, items);
-		}
-		items.add(item);
+		String[] parts = bindingConfig.split(":", 2);		
+		addBindingConfig(item, this.createBindingConfig(parts[0], (parts.length > 1) ? parts[1] : ""));
 	}
 	
 	@Override
@@ -88,12 +81,11 @@ public class SatelGenericBindingProvider extends AbstractGenericBindingProvider 
 	 * {@inheritDoc}
 	 */
 	@Override
-	public BindingConfig getConfig(String itemName) {
-		BindingConfig config = this.getConfig(itemName);
-		return config;
+	public SatelBindingConfig getItemConfig(String itemName) {
+		return (SatelBindingConfig) this.bindingConfigs.get(itemName);
 	}
 
-	public BindingConfig createBindingConfig(String type, String config) throws BindingConfigParseException {
+	private BindingConfig createBindingConfig(String type, String config) throws BindingConfigParseException {
 		// try IntegraStateBindingConfig first
 		for (IntegraStateBindingConfig.ObjectType t : IntegraStateBindingConfig.ObjectType.values())
 			if (t.name().equals(type))

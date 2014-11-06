@@ -150,7 +150,12 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 	
 	public boolean sendCommand(SatelMessage cmd) {
 		try {
-			this.sendQueue.put(cmd);
+			if (this.sendQueue.contains(cmd)) {
+				logger.trace("Command already in the queue: {}", cmd);
+			} else {
+				this.sendQueue.put(cmd);
+				logger.debug("Command enqueued: {}", cmd);
+			}
 			return true;
 		} catch (InterruptedException e) {
 			return false;
