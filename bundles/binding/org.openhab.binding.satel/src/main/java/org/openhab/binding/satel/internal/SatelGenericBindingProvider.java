@@ -20,6 +20,8 @@ import org.openhab.core.library.items.NumberItem;
 import org.openhab.core.library.items.SwitchItem;
 import org.openhab.model.item.binding.AbstractGenericBindingProvider;
 import org.openhab.model.item.binding.BindingConfigParseException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -29,6 +31,8 @@ import org.openhab.model.item.binding.BindingConfigParseException;
  * @since 1.7.0
  */
 public class SatelGenericBindingProvider extends AbstractGenericBindingProvider implements SatelBindingProvider {
+
+	private static final Logger logger = LoggerFactory.getLogger(SatelGenericBindingProvider.class);
 	
 	/**
 	 * {@inheritDoc}
@@ -57,6 +61,8 @@ public class SatelGenericBindingProvider extends AbstractGenericBindingProvider 
 	 */
 	@Override
 	public void processBindingConfiguration(String context, Item item, String bindingConfig) throws BindingConfigParseException {
+		logger.trace("Processing binding configuration for item {}", item.getName());
+		
 		super.processBindingConfiguration(context, item, bindingConfig);
 		
 		String[] parts = bindingConfig.split(":", 2);		
@@ -86,12 +92,17 @@ public class SatelGenericBindingProvider extends AbstractGenericBindingProvider 
 	}
 
 	private BindingConfig createBindingConfig(String type, String config) throws BindingConfigParseException {
-		// try IntegraStateBindingConfig first
-		for (IntegraStateBindingConfig.ObjectType t : IntegraStateBindingConfig.ObjectType.values())
-			if (t.name().equals(type))
-				return new IntegraStateBindingConfig(type, config);
-		
-		// no more options, throw parse exception
-		throw new BindingConfigParseException(String.format("Invalid binding configuration type: {}", type));
+		try {
+			// try IntegraStateBindingConfig first
+			for (IntegraStateBindingConfig.ObjectType t : IntegraStateBindingConfig.ObjectType.values())
+				if (t.name().equals(type))
+					return new IntegraStateBindingConfig(type, config);
+			
+			// no more options, throw parse exception
+			throw new BindingConfigParseException(String.format("Invalid binding configuration type: {}", type));
+			
+		} catch (Exception e) {
+			throw new BindingConfigParseException(String.format("Invalid binding configuration: {}:{}", type, config));
+		}
 	}
 }

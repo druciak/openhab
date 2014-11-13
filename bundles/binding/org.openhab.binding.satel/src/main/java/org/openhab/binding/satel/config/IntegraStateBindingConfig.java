@@ -15,6 +15,7 @@ import org.openhab.binding.satel.internal.protocol.SatelMessage;
 import org.openhab.binding.satel.internal.protocol.SatelModule.IntegraType;
 import org.openhab.core.items.Item;
 import org.openhab.core.types.Command;
+import org.openhab.model.item.binding.BindingConfigParseException;
 
 /**
  * TODO document me!
@@ -47,25 +48,32 @@ public class IntegraStateBindingConfig implements SatelBindingConfig {
 	private StateType stateType;
 	private int objectNumber;
 
-	public IntegraStateBindingConfig(String type, String config) {
+	public IntegraStateBindingConfig(String type, String config) throws BindingConfigParseException {
 		this.objectType = ObjectType.valueOf(type);
 		
 		String[] parts = config.split(":");
-		switch (this.objectType) {
-		case input:
-			this.stateType = InputState.valueOf(parts[0]);
-			break;
-		case zone:
-			this.stateType = ZoneState.valueOf(parts[0]);
-			break;
-		case output:
-			break;
-		case doors:
-			this.stateType = DoorsState.valueOf(parts[0]);
-			break;
+		int idx = 0;
+		
+		try {
+			switch (this.objectType) {
+			case input:
+				this.stateType = InputState.valueOf(parts[idx++]);
+				break;
+			case zone:
+				this.stateType = ZoneState.valueOf(parts[idx++]);
+				break;
+			case output:
+				break;
+			case doors:
+				this.stateType = DoorsState.valueOf(parts[idx++]);
+				break;
+			}
+		} catch (Exception e) {
+			throw new BindingConfigParseException(String.format("Invalid state type '{}' for {}", parts[idx-1], this.objectType));
 		}
-		if (parts.length > 1) {
-			this.objectNumber = Integer.parseInt(parts[1]);
+		
+		if (idx < parts.length) {
+			this.objectNumber = Integer.parseInt(parts[idx++]);
 		}
 	}
 

@@ -38,9 +38,9 @@ import org.slf4j.LoggerFactory;
 public class SatelBinding extends AbstractActiveBinding<SatelBindingProvider> implements ManagedService, EventListener {
 	
 	private static final Logger logger = LoggerFactory.getLogger(SatelBinding.class);
-
+	
 	/**
-	 * the refresh interval which is used to poll values from the OneWire server
+	 * the refresh interval which is used to poll values from connected module
 	 * (optional, defaults to 10000s)
 	 */
 	private long refreshInterval = 10000;
@@ -62,6 +62,8 @@ public class SatelBinding extends AbstractActiveBinding<SatelBindingProvider> im
 	 */
 	@Override
 	public void execute() {
+		logger.trace("Executing refresh");
+		
 		if (! isProperlyConfigured()) {
 			logger.warn("Binding not properly configured, exiting");
 			return;
@@ -96,42 +98,27 @@ public class SatelBinding extends AbstractActiveBinding<SatelBindingProvider> im
 	 */
 	@Override
 	public void updated(Dictionary<String, ?> config) throws ConfigurationException {
+		logger.trace("Binding configuration updated: {}", config);
+		
 		if (config == null)
 			return;
 		
-		String refreshIntervalString = (String) config.get("refresh");
-		if (StringUtils.isNotBlank(refreshIntervalString)) {
-			this.refreshInterval = Long.parseLong(refreshIntervalString);
-		}
+		this.refreshInterval = getLongValue(config, "refresh", 10000);
 
-		int timeout;
-		try {
-			String timeoutString = (String) config.get("timeout");
-			if (StringUtils.isNotBlank(timeoutString))
-				timeout = Integer.parseInt(timeoutString);
-			else
-				timeout = 5000;
-		} catch (Exception e) {
-			throw new ConfigurationException("timeout", "invalid value");
-		}
-		
+		int timeout = (int) getLongValue(config, "timeout", 5000);
 		String host = (String) config.get("host");
 		if (StringUtils.isNotBlank(host)) {
-			int port;
-			try {
-				port = Integer.parseInt((String) config.get("port"));
-			} catch (Exception e) {
-				throw new ConfigurationException("port", "invalid value");
-			}
 			// TODO implement encryption
-			this.satelModule = new Ethm1Module(host, port, timeout);
+			this.satelModule = new Ethm1Module(host, (int) getLongValue(config, "port", 7094), timeout);
 		} else {
 			this.satelModule = new IntRSModule((String) config.get("port"), timeout);
 		}
 		
 		this.satelModule.addEventListener(this);
-		this.satelModule.open();
+		// TODO uncomment me!
+//		this.satelModule.open();
 		setProperlyConfigured(true);
+		logger.trace("Binding properly configured");
 	}
 	
 	/**
@@ -139,6 +126,8 @@ public class SatelBinding extends AbstractActiveBinding<SatelBindingProvider> im
 	 */
 	@Override
 	protected void internalReceiveCommand(String itemName, Command command) {
+		logger.trace("Received command for item {}: {}", itemName, command);
+		
 		if (! isProperlyConfigured()) {
 			logger.warn("Binding not properly configured, exiting");
 			return;
@@ -151,7 +140,9 @@ public class SatelBinding extends AbstractActiveBinding<SatelBindingProvider> im
 		
 		for (SatelBindingProvider provider : providers) {
 			SatelBindingConfig itemConfig = provider.getItemConfig(itemName);
-			itemConfig.receiveCommand(command);
+			if (itemConfig != null) {
+				itemConfig.receiveCommand(command);
+			}
 		}
 	}
 
@@ -180,6 +171,19 @@ public class SatelBinding extends AbstractActiveBinding<SatelBindingProvider> im
 		if (this.satelModule != null) {
 			this.satelModule.close();
 			this.satelModule = null;
+		}
+	}
+	
+	private static long getLongValue(Dictionary<String, ?> config, String name, int defaultValue) throws ConfigurationException {
+		String val = (String) config.get(name);
+		try {
+			if (StringUtils.isNotBlank(val)) {
+				return Long.parseLong(val);
+			} else {
+				return defaultValue;
+			}
+		} catch (Exception e) {
+			throw new ConfigurationException(name, "invalid integer value");
 		}
 	}
 }
