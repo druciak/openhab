@@ -8,9 +8,8 @@
  */
 package org.openhab.binding.satel.internal.event;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,40 +22,38 @@ import org.slf4j.LoggerFactory;
  */
 public class EventDispatcher {
 	private static final Logger logger = LoggerFactory.getLogger(EventDispatcher.class);
-	
-	private final List<EventListener> eventListeners = new LinkedList<EventListener>();
+
+	private final Set<EventListener> eventListeners = new CopyOnWriteArraySet<EventListener>();
 
 	/**
 	 * Add a listener for Satel events.
-	 * @param eventListener the event listener to add.
+	 * 
+	 * @param eventListener
+	 *            the event listener to add.
 	 */
 	public void addEventListener(EventListener eventListener) {
-		synchronized (this.eventListeners) {
-			this.eventListeners.add(eventListener);
-		}
+		this.eventListeners.add(eventListener);
 	}
 
 	/**
 	 * Remove a listener for Satel events.
-	 * @param eventListener the event listener to remove.
+	 * 
+	 * @param eventListener
+	 *            the event listener to remove.
 	 */
 	public void removeEventListener(EventListener eventListener) {
-		synchronized (this.eventListeners) {
-			this.eventListeners.remove(eventListener);
-		}
+		this.eventListeners.remove(eventListener);
 	}
-	
+
 	/**
 	 * Dispatch incoming event to all listeners.
-	 * @param event the event to distribute.
+	 * 
+	 * @param event
+	 *            the event to distribute.
 	 */
 	public void dispatchEvent(SatelEvent event) {
-		ArrayList<EventListener> listeners;
-		synchronized (this.eventListeners) {
-			listeners = new ArrayList<EventListener>(this.eventListeners);
-		}
 		logger.debug("Distributing event: {}", event);
-		for (EventListener listener : listeners) {
+		for (EventListener listener : eventListeners) {
 			logger.trace("Distributing to {}", listener.toString());
 			listener.incomingEvent(event);
 		}

@@ -21,8 +21,15 @@ import org.openhab.binding.satel.internal.event.EventDispatcher;
 import org.openhab.binding.satel.internal.event.EventListener;
 import org.openhab.binding.satel.internal.event.IntegraVersionEvent;
 import org.openhab.binding.satel.internal.event.SatelEvent;
+import org.openhab.binding.satel.internal.protocol.command.IntegraStateCommand;
 import org.openhab.binding.satel.internal.protocol.command.IntegraVersionCommand;
+import org.openhab.binding.satel.internal.protocol.command.NewStatesCommand;
 import org.openhab.binding.satel.internal.protocol.command.SatelCommand;
+import org.openhab.binding.satel.internal.types.DoorsState;
+import org.openhab.binding.satel.internal.types.InputState;
+import org.openhab.binding.satel.internal.types.OutputState;
+import org.openhab.binding.satel.internal.types.StateType;
+import org.openhab.binding.satel.internal.types.ZoneState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -127,7 +134,7 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 			}
 		};
 		this.communicationThread.start();
-		
+		// get Integra version
 		sendCommand(IntegraVersionCommand.buildMessage());
 	}
 
@@ -162,6 +169,7 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 		}
 	}
 	
+	@Override
 	public void incomingEvent(SatelEvent event) {
 		if (event instanceof IntegraVersionEvent) {
 			IntegraVersionEvent versionEvent = (IntegraVersionEvent) event;
@@ -174,6 +182,19 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 	private void registerCommands() {
 		// TODO add other commands
 		this.supportedCommands.put(IntegraVersionCommand.COMMAND_CODE, new IntegraVersionCommand(this));
+		this.supportedCommands.put(NewStatesCommand.COMMAND_CODE, new NewStatesCommand(this));
+		for (StateType state : ZoneState.values()) {
+			this.supportedCommands.put(state.getRefreshCommand(), new IntegraStateCommand(state, this));
+		}
+		for (StateType state : InputState.values()) {
+			this.supportedCommands.put(state.getRefreshCommand(), new IntegraStateCommand(state, this));
+		}
+		for (StateType state : OutputState.values()) {
+			this.supportedCommands.put(state.getRefreshCommand(), new IntegraStateCommand(state, this));
+		}
+		for (StateType state : DoorsState.values()) {
+			this.supportedCommands.put(state.getRefreshCommand(), new IntegraStateCommand(state, this));
+		}
 	}
 
 	private SatelMessage readMessage() {

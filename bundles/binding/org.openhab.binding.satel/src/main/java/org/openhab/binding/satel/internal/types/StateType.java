@@ -6,22 +6,25 @@
  * which accompanies this distribution, and is available at
  * http://www.eclipse.org/legal/epl-v10.html
  */
-package org.openhab.binding.satel.internal.event;
+package org.openhab.binding.satel.internal.types;
 
 /**
- * Event listener interface. All classes that want to receive Satel events must
- * implement this interface.
+ * TODO document me!
  * 
  * @author Krzysztof Goworek
  * @since 1.7.0
  */
-public interface EventListener {
-
+public interface StateType {
+	
 	/**
-	 * Event handler for Satel events.
-	 * 
-	 * @param event
-	 *            incoming event to handle
+	 * Returns Satel command to get current state for this state type.
+	 * @return command identifier
 	 */
-	void incomingEvent(SatelEvent event);
+	byte getRefreshCommand();
+	
+	/**
+	 * Returns object type for this kind of state.
+	 * @return Integra object type
+	 */
+	ObjectType getObjectType();
 }

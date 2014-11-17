@@ -14,6 +14,7 @@ import org.openhab.binding.satel.internal.protocol.SatelModule.IntegraType;
 import org.openhab.core.binding.BindingConfig;
 import org.openhab.core.items.Item;
 import org.openhab.core.types.Command;
+import org.openhab.core.types.State;
 
 /**
  * TODO document me!
@@ -22,21 +23,38 @@ import org.openhab.core.types.Command;
  * @since 1.7.0
  */
 public interface SatelBindingConfig extends BindingConfig {
-	
+
 	/**
+	 * Converts data from {@link SatelEvent} to OpenHAB state of specified item.
+	 * 
 	 * @param item
+	 *            an item to get new state for
 	 * @param event
+	 *            incoming event
+	 * @return new item state
 	 */
-	void updateItem(Item item, SatelEvent event);
-	
+	State convertEventToState(Item item, SatelEvent event);
+
 	/**
+	 * Converts OpenHAB command to proper Satel message that changes state of
+	 * bound object (output, zone).
+	 * 
 	 * @param command
-	 */
-	void receiveCommand(Command command);
-	
-	/**
+	 *            command to convert
 	 * @param integraType
-	 * @return
+	 *            type of connected Integra
+	 * @param userCode
+	 *            user's password
+	 * @return a message to send
 	 */
-	SatelMessage buildRefreshCommand(IntegraType integraType);
+	SatelMessage handleCommand(Command command, IntegraType integraType, String userCode);
+
+	/**
+	 * Returns message needed to get current state of bound object.
+	 * 
+	 * @param integraType
+	 *            type of connected Integra
+	 * @return a message to send
+	 */
+	SatelMessage buildRefreshMessage(IntegraType integraType);
 }

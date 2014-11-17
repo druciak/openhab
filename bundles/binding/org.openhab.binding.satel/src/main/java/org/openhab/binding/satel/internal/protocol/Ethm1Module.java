@@ -14,6 +14,7 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,15 +27,18 @@ import org.slf4j.LoggerFactory;
 public class Ethm1Module extends SatelModule {
 	private static final Logger logger = LoggerFactory.getLogger(Ethm1Module.class);
 
-	String host;
-	int port;
-	int timeout;
-	private Socket socket = null;
+	private String host;
+	private int port;
+	private int timeout;
+	private String encryptionKey;
+	private Socket socket;
 
-	public Ethm1Module(String host, int port, int timeout) {
+	public Ethm1Module(String host, int port, int timeout, String encryptionKey) {
 		this.host = host;
 		this.port = port;
 		this.timeout = timeout;
+		this.encryptionKey = encryptionKey;
+		this.socket = null;
 	}
 
 	@Override
@@ -42,6 +46,11 @@ public class Ethm1Module extends SatelModule {
 		logger.info("Connecting to ETHM-1 module at {}:{}", this.host, this.port);
 		
 		try {
+			if (StringUtils.isNotBlank(this.encryptionKey)) {
+				// TODO implement encryption
+				logger.error("ETHM-1 encryption not yet implemented.");
+				return null;
+			}
 			this.socket = new Socket();
 			this.socket.connect(new InetSocketAddress(this.host, this.port), this.timeout);
 			this.socket.setSoTimeout(this.timeout);

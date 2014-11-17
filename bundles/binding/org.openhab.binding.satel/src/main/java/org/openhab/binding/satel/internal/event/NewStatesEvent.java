@@ -8,20 +8,27 @@
  */
 package org.openhab.binding.satel.internal.event;
 
+import java.util.BitSet;
+
 /**
- * Event listener interface. All classes that want to receive Satel events must
- * implement this interface.
+ * TODO document me!
  * 
  * @author Krzysztof Goworek
  * @since 1.7.0
  */
-public interface EventListener {
+public class NewStatesEvent implements SatelEvent {
 
-	/**
-	 * Event handler for Satel events.
-	 * 
-	 * @param event
-	 *            incoming event to handle
-	 */
-	void incomingEvent(SatelEvent event);
+	private BitSet newStates;
+
+	public NewStatesEvent(BitSet newStates) {
+		this.newStates = newStates;
+	}
+
+	public NewStatesEvent(byte[] newStates) {
+		this(BitSet.valueOf(newStates));
+	}
+
+	public boolean isNew(int nbr) {
+		return newStates.get(nbr);
+	}
 }

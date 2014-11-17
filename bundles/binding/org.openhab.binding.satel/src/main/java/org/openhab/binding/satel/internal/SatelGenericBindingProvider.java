@@ -13,7 +13,6 @@ import java.util.Set;
 import org.openhab.binding.satel.SatelBindingConfig;
 import org.openhab.binding.satel.SatelBindingProvider;
 import org.openhab.binding.satel.config.IntegraStateBindingConfig;
-import org.openhab.core.binding.BindingConfig;
 import org.openhab.core.items.Item;
 import org.openhab.core.library.items.ContactItem;
 import org.openhab.core.library.items.NumberItem;
@@ -22,7 +21,6 @@ import org.openhab.model.item.binding.AbstractGenericBindingProvider;
 import org.openhab.model.item.binding.BindingConfigParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 /**
  * TODO document me!
@@ -33,7 +31,7 @@ import org.slf4j.LoggerFactory;
 public class SatelGenericBindingProvider extends AbstractGenericBindingProvider implements SatelBindingProvider {
 
 	private static final Logger logger = LoggerFactory.getLogger(SatelGenericBindingProvider.class);
-	
+
 	/**
 	 * {@inheritDoc}
 	 */
@@ -47,28 +45,28 @@ public class SatelGenericBindingProvider extends AbstractGenericBindingProvider 
 	 */
 	@Override
 	public void validateItemType(Item item, String bindingConfig) throws BindingConfigParseException {
-		// TODO implement me!
 		if ((item instanceof NumberItem) || (item instanceof ContactItem) || (item instanceof SwitchItem)) {
 			return;
 		}
-		throw new BindingConfigParseException("item '" + item.getName()
-			+ "' is of type '" + item.getClass().getSimpleName()
-			+ "', only Number- Contact- and Switch type is allowed - please check your *.items configuration");
+		throw new BindingConfigParseException("item '" + item.getName() + "' is of type '"
+				+ item.getClass().getSimpleName()
+				+ "', only Number- Contact- and Switch type is allowed - please check your *.items configuration");
 	}
-	
+
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void processBindingConfiguration(String context, Item item, String bindingConfig) throws BindingConfigParseException {
+	public void processBindingConfiguration(String context, Item item, String bindingConfig)
+			throws BindingConfigParseException {
 		logger.trace("Processing binding configuration for item {}", item.getName());
-		
 		super.processBindingConfiguration(context, item, bindingConfig);
-		
-		String[] parts = bindingConfig.split(":", 2);		
-		addBindingConfig(item, this.createBindingConfig(parts[0], (parts.length > 1) ? parts[1] : ""));
+		addBindingConfig(item, this.createBindingConfig(bindingConfig));
 	}
-	
+
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public Item getItem(String itemName) {
 		for (Set<Item> items : contextMap.values()) {
@@ -81,8 +79,8 @@ public class SatelGenericBindingProvider extends AbstractGenericBindingProvider 
 			}
 		}
 		return null;
-	}	
-	
+	}
+
 	/**
 	 * {@inheritDoc}
 	 */
@@ -91,18 +89,21 @@ public class SatelGenericBindingProvider extends AbstractGenericBindingProvider 
 		return (SatelBindingConfig) this.bindingConfigs.get(itemName);
 	}
 
-	private BindingConfig createBindingConfig(String type, String config) throws BindingConfigParseException {
+	private SatelBindingConfig createBindingConfig(String bindingConfig) throws BindingConfigParseException {
 		try {
+			SatelBindingConfig bc = null;
+
 			// try IntegraStateBindingConfig first
-			for (IntegraStateBindingConfig.ObjectType t : IntegraStateBindingConfig.ObjectType.values())
-				if (t.name().equals(type))
-					return new IntegraStateBindingConfig(type, config);
-			
+			bc = IntegraStateBindingConfig.parseConfig(bindingConfig);
+			if (bc != null) {
+				return bc;
+			}
+
 			// no more options, throw parse exception
-			throw new BindingConfigParseException(String.format("Invalid binding configuration type: {}", type));
-			
 		} catch (Exception e) {
-			throw new BindingConfigParseException(String.format("Invalid binding configuration: {}:{}", type, config));
+			// throw parse exception in case of any error
 		}
+
+		throw new BindingConfigParseException(String.format("Invalid binding configuration: {}", bindingConfig));
 	}
 }

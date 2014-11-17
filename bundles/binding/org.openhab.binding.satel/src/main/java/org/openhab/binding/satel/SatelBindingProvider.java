@@ -18,18 +18,24 @@ import org.openhab.core.items.Item;
  * @since 1.6.0
  */
 public interface SatelBindingProvider extends BindingProvider {
-	
+
 	/**
-	 * Returns the {@link Item} with the specified item name. Returns null
-	 * if the item was not found.
-	 * @param itemName the name of the item.
+	 * Returns the {@link Item} with the specified item name. Returns null if
+	 * the item was not found.
+	 * 
+	 * @param itemName
+	 *            the name of the item.
 	 * @return the item.
 	 */
 	Item getItem(String itemName);
-	
+
 	/**
+	 * Returns the {@link SatelBindingConfig} for the specified item name.
+	 * Returns null if the item was not found.
+	 * 
 	 * @param itemName
-	 * @return
+	 *            the name of the item.
+	 * @return the binding configuration for the item.
 	 */
 	SatelBindingConfig getItemConfig(String itemName);
 }

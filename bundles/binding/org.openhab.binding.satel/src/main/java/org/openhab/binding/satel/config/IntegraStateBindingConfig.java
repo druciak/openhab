@@ -8,13 +8,31 @@
  */
 package org.openhab.binding.satel.config;
 
+import java.util.BitSet;
+
 import org.openhab.binding.satel.SatelBindingConfig;
 import org.openhab.binding.satel.internal.event.IntegraStateEvent;
 import org.openhab.binding.satel.internal.event.SatelEvent;
 import org.openhab.binding.satel.internal.protocol.SatelMessage;
 import org.openhab.binding.satel.internal.protocol.SatelModule.IntegraType;
+import org.openhab.binding.satel.internal.protocol.command.IntegraStateCommand;
+import org.openhab.binding.satel.internal.protocol.command.OutputControlCommand;
+import org.openhab.binding.satel.internal.types.DoorsState;
+import org.openhab.binding.satel.internal.types.InputState;
+import org.openhab.binding.satel.internal.types.ObjectType;
+import org.openhab.binding.satel.internal.types.OutputControl;
+import org.openhab.binding.satel.internal.types.OutputState;
+import org.openhab.binding.satel.internal.types.StateType;
+import org.openhab.binding.satel.internal.types.ZoneState;
 import org.openhab.core.items.Item;
+import org.openhab.core.library.items.ContactItem;
+import org.openhab.core.library.items.NumberItem;
+import org.openhab.core.library.items.SwitchItem;
+import org.openhab.core.library.types.DecimalType;
+import org.openhab.core.library.types.OnOffType;
+import org.openhab.core.library.types.OpenClosedType;
 import org.openhab.core.types.Command;
+import org.openhab.core.types.State;
 import org.openhab.model.item.binding.BindingConfigParseException;
 
 /**
@@ -25,77 +43,137 @@ import org.openhab.model.item.binding.BindingConfigParseException;
  */
 public class IntegraStateBindingConfig implements SatelBindingConfig {
 
-	public enum ObjectType {
-		input, zone, output, doors;
-	}
+	private final static DecimalType DECIMAL_ONE = new DecimalType(1);
 
-	public interface StateType {
-	}
-
-	public enum InputState implements StateType {
-		violation, tamper, alarm, tamper_alarm, alarm_memory, tamper_alarm_memory, bypass, no_violation_trouble, long_violation_trouble;
-	}
-
-	public enum ZoneState implements StateType {
-		armed, really_armed, armed_mode_2, armed_mode_3, first_code_entered, entry_time, exit_time_gt_10, exit_time_lt_10, temporary_blocked, blocked_for_guard, alarm, fire_alarm, alarm_memory, fire_alarm_memory;
-	}
-
-	public enum DoorsState implements StateType {
-		opened, opened_long;
-	}
-
-	private ObjectType objectType;
 	private StateType stateType;
 	private int objectNumber;
 
-	public IntegraStateBindingConfig(String type, String config) throws BindingConfigParseException {
-		this.objectType = ObjectType.valueOf(type);
-		
-		String[] parts = config.split(":");
+	private IntegraStateBindingConfig(StateType stateType, int objectNumber) {
+		this.stateType = stateType;
+		this.objectNumber = objectNumber;
+	}
+
+	/**
+	 * Parses given binding configuration and creates configuration object.
+	 * 
+	 * @param bindingConfig
+	 *            config to parse
+	 * @return parsed config object or <code>null</code> if config does not
+	 *         match
+	 * @throws BindingConfigParseException
+	 *             in case of parse errors
+	 */
+	public static IntegraStateBindingConfig parseConfig(String bindingConfig) throws BindingConfigParseException {
+		String[] configElements = bindingConfig.split(":");
 		int idx = 0;
-		
+		ObjectType objectType;
+
 		try {
-			switch (this.objectType) {
+			objectType = ObjectType.valueOf(configElements[idx++]);
+		} catch (Exception e) {
+			// wrong config type, skip parsing
+			return null;
+		}
+
+		StateType stateType = null;
+		int objectNumber = -1;
+
+		try {
+			switch (objectType) {
 			case input:
-				this.stateType = InputState.valueOf(parts[idx++]);
+				stateType = InputState.valueOf(configElements[idx++]);
 				break;
 			case zone:
-				this.stateType = ZoneState.valueOf(parts[idx++]);
+				stateType = ZoneState.valueOf(configElements[idx++]);
 				break;
 			case output:
+				stateType = OutputState.state;
 				break;
 			case doors:
-				this.stateType = DoorsState.valueOf(parts[idx++]);
+				stateType = DoorsState.valueOf(configElements[idx++]);
 				break;
 			}
 		} catch (Exception e) {
-			throw new BindingConfigParseException(String.format("Invalid state type '{}' for {}", parts[idx-1], this.objectType));
+			throw new BindingConfigParseException(String.format("Invalid state type: {}", bindingConfig));
 		}
-		
-		if (idx < parts.length) {
-			this.objectNumber = Integer.parseInt(parts[idx++]);
+
+		if (idx < configElements.length) {
+			try {
+				objectNumber = Integer.parseInt(configElements[idx++]);
+			} catch (NumberFormatException e) {
+				throw new BindingConfigParseException(String.format("Invalid object number: {}", bindingConfig));
+			}
 		}
+
+		if (idx < configElements.length) {
+			// if anything left, throw exception
+			throw new BindingConfigParseException(String.format("Too many elements: {}", bindingConfig));
+		}
+
+		return new IntegraStateBindingConfig(stateType, objectNumber);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
-	public void updateItem(Item item, SatelEvent event) {
-		if (! (event instanceof IntegraStateEvent)) {
-			return;
+	public State convertEventToState(Item item, SatelEvent event) {
+		if (!(event instanceof IntegraStateEvent)) {
+			return null;
 		}
-		
-		// TODO Auto-generated method stub
-		
-	}
 
-	@Override
-	public void receiveCommand(Command command) {
-		// TODO Auto-generated method stub
-		
-	}
+		IntegraStateEvent stateEvent = (IntegraStateEvent) event;
+		if (stateEvent.getStateType() != this.stateType) {
+			return null;
+		}
 
-	@Override
-	public SatelMessage buildRefreshCommand(IntegraType integraType) {
-		// TODO Auto-generated method stub
+		if (this.objectNumber >= 0) {
+			if (item instanceof ContactItem) {
+				return stateEvent.isSet(this.objectNumber) ? OpenClosedType.OPEN : OpenClosedType.CLOSED;
+			} else if (item instanceof SwitchItem) {
+				return stateEvent.isSet(this.objectNumber) ? OnOffType.ON : OnOffType.OFF;
+			} else if (item instanceof NumberItem) {
+				return stateEvent.isSet(this.objectNumber) ? DECIMAL_ONE : DecimalType.ZERO;
+			}
+		} else {
+			if (item instanceof ContactItem) {
+				return (stateEvent.statesSet() > 0) ? OpenClosedType.OPEN : OpenClosedType.CLOSED;
+			} else if (item instanceof SwitchItem) {
+				return (stateEvent.statesSet() > 0) ? OnOffType.ON : OnOffType.OFF;
+			} else if (item instanceof NumberItem) {
+				return new DecimalType(stateEvent.statesSet());
+			}
+		}
+
 		return null;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public SatelMessage handleCommand(Command command, IntegraType integraType, String userCode) {
+		if (this.stateType.getObjectType() == ObjectType.output && command instanceof OnOffType
+				&& this.objectNumber >= 0) {
+
+			BitSet outputs = new BitSet((integraType == IntegraType.I256_PLUS) ? 256 : 128);
+			outputs.set(this.objectNumber);
+
+			if ((OnOffType) command == OnOffType.ON) {
+				return OutputControlCommand.buildMessage(OutputControl.on, outputs);
+			} else {
+				return OutputControlCommand.buildMessage(OutputControl.off, outputs);
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public SatelMessage buildRefreshMessage(IntegraType integraType) {
+		return IntegraStateCommand.buildMessage(this.stateType, integraType == IntegraType.I256_PLUS);
 	}
 }

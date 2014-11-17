@@ -14,6 +14,5 @@ package org.openhab.binding.satel.internal.event;
  * @author Krzysztof Goworek
  * @since 1.7.0
  */
-public abstract class SatelEvent {
-	// TODO change to interface
+public interface SatelEvent {
 }
