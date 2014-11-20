@@ -14,12 +14,13 @@ package org.openhab.binding.satel.internal.types;
  * @author Krzysztof Goworek
  * @since 1.7.0
  */
-public enum OutputControl implements ControlType {
-	on(0x88), off(0x89), toggle(0x91);
+public enum ZoneControl implements ControlType {
+	// TODO add force arming
+	arm_mode_0(0x80), arm_mode_1(0x81), arm_mode_2(0x82), arm_mode_3(0x83), disarm(0x84);
 
 	private byte controlCommand;
 
-	OutputControl(int controlCommand) {
+	ZoneControl(int controlCommand) {
 		this.controlCommand = (byte) controlCommand;
 	}
 
@@ -36,6 +37,6 @@ public enum OutputControl implements ControlType {
 	 */
 	@Override
 	public ObjectType getObjectType() {
-		return ObjectType.output;
+		return ObjectType.zone;
 	}
 }

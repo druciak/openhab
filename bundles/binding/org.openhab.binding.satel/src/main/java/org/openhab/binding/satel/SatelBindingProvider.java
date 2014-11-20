@@ -12,10 +12,11 @@ import org.openhab.core.binding.BindingProvider;
 import org.openhab.core.items.Item;
 
 /**
- * TODO document me!
+ * This interface is implemented by classes that can provide mapping information
+ * between openHAB items and Satel module.
  * 
  * @author Krzysztof Goworek
- * @since 1.6.0
+ * @since 1.7.0
  */
 public interface SatelBindingProvider extends BindingProvider {
 

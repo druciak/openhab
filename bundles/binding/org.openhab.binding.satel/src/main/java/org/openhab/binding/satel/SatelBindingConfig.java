@@ -17,7 +17,8 @@ import org.openhab.core.types.Command;
 import org.openhab.core.types.State;
 
 /**
- * TODO document me!
+ * Base interface that all Satel configuration classes must implement. Provides
+ * methods to converts data between OpenHAB and Satel module.
  * 
  * @author Krzysztof Goworek
  * @since 1.7.0

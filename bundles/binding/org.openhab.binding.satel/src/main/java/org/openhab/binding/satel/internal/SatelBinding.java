@@ -22,6 +22,8 @@ import org.openhab.binding.satel.internal.protocol.Ethm1Module;
 import org.openhab.binding.satel.internal.protocol.IntRSModule;
 import org.openhab.binding.satel.internal.protocol.SatelMessage;
 import org.openhab.binding.satel.internal.protocol.SatelModule;
+import org.openhab.binding.satel.internal.protocol.SatelModule.IntegraType;
+import org.openhab.binding.satel.internal.protocol.command.NewStatesCommand;
 import org.openhab.core.binding.AbstractActiveBinding;
 import org.openhab.core.items.Item;
 import org.openhab.core.types.Command;
@@ -32,7 +34,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * TODO document me!
+ * This is main service class that helps exchanging data between OpenHAB and
+ * Satel module in both directions. Implements regular OpenHAB binding service.
  * 
  * @author Krzysztof Goworek
  * @since 1.7.0
@@ -44,6 +47,7 @@ public class SatelBinding extends AbstractActiveBinding<SatelBindingProvider> im
 	private long refreshInterval = 10000;
 	private String userCode;
 	private SatelModule satelModule = null;
+	private boolean firstRefresh;
 
 	/**
 	 * {@inheritDoc}
@@ -76,10 +80,19 @@ public class SatelBinding extends AbstractActiveBinding<SatelBindingProvider> im
 			return;
 		}
 
-		List<SatelMessage> commands = getRefreshCommands();
-		logger.trace("Sending {} refresh commands", commands.size());
-		for (SatelMessage message : commands) {
-			this.satelModule.sendCommand(message);
+		// for first refresh after connecting to the module, make full refresh
+		// after that check what has changed since last refresh
+		if (this.firstRefresh) {
+			this.firstRefresh = false;
+
+			List<SatelMessage> commands = getRefreshCommands();
+			logger.trace("Sending {} refresh commands", commands.size());
+			for (SatelMessage message : commands) {
+				this.satelModule.sendCommand(message);
+			}
+		} else {
+			this.satelModule
+					.sendCommand(NewStatesCommand.buildMessage(this.satelModule.getIntegraType() == IntegraType.I256_PLUS));
 		}
 	}
 
@@ -107,6 +120,7 @@ public class SatelBinding extends AbstractActiveBinding<SatelBindingProvider> im
 
 		this.satelModule.addEventListener(this);
 		this.satelModule.open();
+		this.firstRefresh = true;
 		setProperlyConfigured(true);
 		logger.trace("Binding properly configured");
 	}

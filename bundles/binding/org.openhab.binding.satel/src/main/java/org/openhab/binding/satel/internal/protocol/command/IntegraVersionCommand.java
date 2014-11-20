@@ -47,7 +47,6 @@ public class IntegraVersionCommand extends SatelCommand {
 		String verStr = new String(response.getPayload(), 1, 1) + "." + new String(response.getPayload(), 2, 2) 
 				+ " " + new String(response.getPayload(), 4, 4) + "-" + new String(response.getPayload(), 8, 2) 
 				+ "-" + new String(response.getPayload(), 10, 2);
-		// TODO confirm verStr is correct
 		// dispatch version event
 		this.getEventDispatcher().dispatchEvent(new IntegraVersionEvent(response.getPayload()[0], verStr, 
 				response.getPayload()[12], response.getPayload()[13] == 255));

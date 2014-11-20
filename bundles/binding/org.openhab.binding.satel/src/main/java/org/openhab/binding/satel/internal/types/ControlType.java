@@ -14,28 +14,17 @@ package org.openhab.binding.satel.internal.types;
  * @author Krzysztof Goworek
  * @since 1.7.0
  */
-public enum OutputControl implements ControlType {
-	on(0x88), off(0x89), toggle(0x91);
-
-	private byte controlCommand;
-
-	OutputControl(int controlCommand) {
-		this.controlCommand = (byte) controlCommand;
-	}
-
+public interface ControlType {
+	
 	/**
-	 * {@inheritDoc}
+	 * Returns Satel command to control state for this kind of object type.
+	 * @return command identifier
 	 */
-	@Override
-	public byte getControlCommand() {
-		return controlCommand;
-	}
-
+	byte getControlCommand();
+	
 	/**
-	 * {@inheritDoc}
+	 * Returns object type for this kind of control.
+	 * @return Integra object type
 	 */
-	@Override
-	public ObjectType getObjectType() {
-		return ObjectType.output;
-	}
+	ObjectType getObjectType();
 }

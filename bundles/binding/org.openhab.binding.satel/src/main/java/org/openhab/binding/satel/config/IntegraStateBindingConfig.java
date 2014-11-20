@@ -8,21 +8,20 @@
  */
 package org.openhab.binding.satel.config;
 
-import java.util.BitSet;
-
 import org.openhab.binding.satel.SatelBindingConfig;
 import org.openhab.binding.satel.internal.event.IntegraStateEvent;
 import org.openhab.binding.satel.internal.event.SatelEvent;
 import org.openhab.binding.satel.internal.protocol.SatelMessage;
 import org.openhab.binding.satel.internal.protocol.SatelModule.IntegraType;
+import org.openhab.binding.satel.internal.protocol.command.ControlObjectCommand;
 import org.openhab.binding.satel.internal.protocol.command.IntegraStateCommand;
-import org.openhab.binding.satel.internal.protocol.command.OutputControlCommand;
 import org.openhab.binding.satel.internal.types.DoorsState;
 import org.openhab.binding.satel.internal.types.InputState;
 import org.openhab.binding.satel.internal.types.ObjectType;
 import org.openhab.binding.satel.internal.types.OutputControl;
 import org.openhab.binding.satel.internal.types.OutputState;
 import org.openhab.binding.satel.internal.types.StateType;
+import org.openhab.binding.satel.internal.types.ZoneControl;
 import org.openhab.binding.satel.internal.types.ZoneState;
 import org.openhab.core.items.Item;
 import org.openhab.core.library.items.ContactItem;
@@ -36,7 +35,8 @@ import org.openhab.core.types.State;
 import org.openhab.model.item.binding.BindingConfigParseException;
 
 /**
- * TODO document me!
+ * This class implements binding configuration for all items that represents
+ * Integra zones/inputs/outputs state.
  * 
  * @author Krzysztof Goworek
  * @since 1.7.0
@@ -76,7 +76,7 @@ public class IntegraStateBindingConfig implements SatelBindingConfig {
 		}
 
 		StateType stateType = null;
-		int objectNumber = -1;
+		int objectNumber = 0;
 
 		try {
 			switch (objectType) {
@@ -127,13 +127,14 @@ public class IntegraStateBindingConfig implements SatelBindingConfig {
 			return null;
 		}
 
-		if (this.objectNumber >= 0) {
+		if (this.objectNumber > 0) {
+			int bitNbr = this.objectNumber - 1;
 			if (item instanceof ContactItem) {
-				return stateEvent.isSet(this.objectNumber) ? OpenClosedType.OPEN : OpenClosedType.CLOSED;
+				return stateEvent.isSet(bitNbr) ? OpenClosedType.OPEN : OpenClosedType.CLOSED;
 			} else if (item instanceof SwitchItem) {
-				return stateEvent.isSet(this.objectNumber) ? OnOffType.ON : OnOffType.OFF;
+				return stateEvent.isSet(bitNbr) ? OnOffType.ON : OnOffType.OFF;
 			} else if (item instanceof NumberItem) {
-				return stateEvent.isSet(this.objectNumber) ? DECIMAL_ONE : DecimalType.ZERO;
+				return stateEvent.isSet(bitNbr) ? DECIMAL_ONE : DecimalType.ZERO;
 			}
 		} else {
 			if (item instanceof ContactItem) {
@@ -153,16 +154,30 @@ public class IntegraStateBindingConfig implements SatelBindingConfig {
 	 */
 	@Override
 	public SatelMessage handleCommand(Command command, IntegraType integraType, String userCode) {
-		if (this.stateType.getObjectType() == ObjectType.output && command instanceof OnOffType
-				&& this.objectNumber >= 0) {
+		if (command instanceof OnOffType && this.objectNumber > 0) {
 
-			BitSet outputs = new BitSet((integraType == IntegraType.I256_PLUS) ? 256 : 128);
-			outputs.set(this.objectNumber);
+			switch (this.stateType.getObjectType()) {
+			case output:
+				byte[] outputs = getObjectBitset((integraType == IntegraType.I256_PLUS) ? 32 : 16);
+				if ((OnOffType) command == OnOffType.ON) {
+					return ControlObjectCommand.buildMessage(OutputControl.on, outputs, userCode);
+				} else {
+					return ControlObjectCommand.buildMessage(OutputControl.off, outputs, userCode);
+				}
 
-			if ((OnOffType) command == OnOffType.ON) {
-				return OutputControlCommand.buildMessage(OutputControl.on, outputs);
-			} else {
-				return OutputControlCommand.buildMessage(OutputControl.off, outputs);
+			case doors:
+				break;
+
+			case input:
+				break;
+
+			case zone:
+				byte[] zones = getObjectBitset(4);
+				if ((OnOffType) command == OnOffType.ON) {
+					return ControlObjectCommand.buildMessage(ZoneControl.arm_mode_0, zones, userCode);
+				} else {
+					return ControlObjectCommand.buildMessage(ZoneControl.disarm, zones, userCode);
+				}
 			}
 		}
 
@@ -175,5 +190,12 @@ public class IntegraStateBindingConfig implements SatelBindingConfig {
 	@Override
 	public SatelMessage buildRefreshMessage(IntegraType integraType) {
 		return IntegraStateCommand.buildMessage(this.stateType, integraType == IntegraType.I256_PLUS);
+	}
+
+	private byte[] getObjectBitset(int size) {
+		byte[] bitset = new byte[size];
+		int bitNbr = this.objectNumber - 1;
+		bitset[bitNbr / 8] = (byte) (1 << (bitNbr % 8));
+		return bitset;
 	}
 }

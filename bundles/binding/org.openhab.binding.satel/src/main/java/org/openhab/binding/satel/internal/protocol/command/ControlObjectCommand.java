@@ -10,9 +10,11 @@ package org.openhab.binding.satel.internal.protocol.command;
 
 import java.util.BitSet;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.openhab.binding.satel.internal.event.EventDispatcher;
 import org.openhab.binding.satel.internal.event.NewStatesEvent;
 import org.openhab.binding.satel.internal.protocol.SatelMessage;
+import org.openhab.binding.satel.internal.types.ControlType;
 import org.openhab.binding.satel.internal.types.OutputControl;
 import org.openhab.binding.satel.internal.types.OutputState;
 import org.slf4j.Logger;
@@ -24,30 +26,33 @@ import org.slf4j.LoggerFactory;
  * @author Krzysztof Goworek
  * @since 1.7.0
  */
-public class OutputControlCommand extends SatelCommand {
-	private static final Logger logger = LoggerFactory.getLogger(OutputControlCommand.class);
+public class ControlObjectCommand extends SatelCommand {
+	private static final Logger logger = LoggerFactory.getLogger(ControlObjectCommand.class);
 
-	private OutputControl outputControl;
+	private ControlType controlType;
 
-	public OutputControlCommand(OutputControl outputControl, EventDispatcher eventDispatcher) {
+	public ControlObjectCommand(ControlType controlType, EventDispatcher eventDispatcher) {
 		super(eventDispatcher);
-		this.outputControl = outputControl;
+		this.controlType = controlType;
 	}
 
-	public static SatelMessage buildMessage(OutputControl outputControl, BitSet outputs) {
-		return new SatelMessage(outputControl.getRefreshCommand(), outputs.toByteArray());
+	public static SatelMessage buildMessage(ControlType controlType, byte[] objects, String userCode) {
+		return new SatelMessage(controlType.getControlCommand(), ArrayUtils.addAll(userCodeToBytes(userCode), objects));
 	}
 
 	@Override
 	public void handleResponse(SatelMessage response) {
 		// validate response
-		if (response.getCommand() != this.outputControl.getRefreshCommand()) {
+		if (response.getCommand() != this.controlType.getControlCommand()) {
 			logger.error("Invalid response code: {}", response.getCommand());
 			return;
 		}
 		// force outputs refresh
 		BitSet newStates = new BitSet(48);
-		newStates.set(OutputState.state.getRefreshCommand());
-		this.getEventDispatcher().dispatchEvent(new NewStatesEvent(newStates));
+		// TODO generalize for all kinds of control
+		if (this.controlType instanceof OutputControl) {
+			newStates.set(OutputState.state.getRefreshCommand());
+			this.getEventDispatcher().dispatchEvent(new NewStatesEvent(newStates));
+		}
 	}
 }

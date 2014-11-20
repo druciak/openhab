@@ -101,7 +101,7 @@ public class SatelMessage {
 			checkSum += ((checkSum >> 8) & 0xff) + (buffer[i] & 0xff);
 		}
 		checkSum &= 0xffff;
-		logger.trace("Calculated checksum = {}", String.format("0x04", checkSum));
+		logger.trace("Calculated checksum = {}", String.format("%04X", checkSum));
 		return checkSum;
 	}
 
@@ -112,7 +112,7 @@ public class SatelMessage {
 	 */
 	@Override
 	public String toString() {
-		return String.format("Message: command = 0x%02X, payload = %s", this.command, getPayloadAsHex());
+		return String.format("Message: command = %02X, payload = %s", this.command, getPayloadAsHex());
 	};
 	
 	/**

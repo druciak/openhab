@@ -26,6 +26,9 @@ public abstract class SatelCommand {
 
 	private EventDispatcher eventDispatcher;
 
+	/**
+	 * @param eventDispatcher
+	 */
 	public SatelCommand(EventDispatcher eventDispatcher) {
 		this.eventDispatcher = eventDispatcher;
 	}
@@ -34,8 +37,43 @@ public abstract class SatelCommand {
 		return this.eventDispatcher;
 	}
 
+	protected static byte[] userCodeToBytes(String userCode) {
+		if (userCode.length() > 8) {
+			throw new IllegalArgumentException("User code too long");
+		}
+		byte[] bytes = new byte[8];
+		int digitsNbr = 2*bytes.length;
+		for (int i = 0; i < digitsNbr; ++i) {
+			if (i < userCode.length()) {
+				char digit = userCode.charAt(i);
+				if (!Character.isDigit(digit)) {
+					throw new IllegalArgumentException("User code must contain digits only");
+				}
+				if (i % 2 == 0) {
+					bytes[i/2] = (byte) ((digit - '0') << 4);
+				} else {
+					bytes[i/2] |= (byte) (digit - '0');
+				}
+			} else if (i % 2 == 0) {
+				bytes[i/2] = (byte) 0xff;
+			} else if (i == userCode.length()) {
+				bytes[i/2] |= 0x0f;
+			}
+		}
+
+		return bytes;
+	}
+
+	/**
+	 * @param response
+	 */
 	public abstract void handleResponse(SatelMessage response);
-	
+
+	/**
+	 * @param commandCode
+	 * @param extended
+	 * @return
+	 */
 	public static SatelMessage buildMessage(byte commandCode, boolean extended) {
 		if (extended) {
 			return new SatelMessage(commandCode, EXTENDED_CMD_PAYLOAD);

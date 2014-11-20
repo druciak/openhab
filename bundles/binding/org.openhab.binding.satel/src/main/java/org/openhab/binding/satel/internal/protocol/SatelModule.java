@@ -21,14 +21,18 @@ import org.openhab.binding.satel.internal.event.EventDispatcher;
 import org.openhab.binding.satel.internal.event.EventListener;
 import org.openhab.binding.satel.internal.event.IntegraVersionEvent;
 import org.openhab.binding.satel.internal.event.SatelEvent;
+import org.openhab.binding.satel.internal.protocol.command.ControlObjectCommand;
 import org.openhab.binding.satel.internal.protocol.command.IntegraStateCommand;
 import org.openhab.binding.satel.internal.protocol.command.IntegraVersionCommand;
 import org.openhab.binding.satel.internal.protocol.command.NewStatesCommand;
 import org.openhab.binding.satel.internal.protocol.command.SatelCommand;
+import org.openhab.binding.satel.internal.types.ControlType;
 import org.openhab.binding.satel.internal.types.DoorsState;
 import org.openhab.binding.satel.internal.types.InputState;
+import org.openhab.binding.satel.internal.types.OutputControl;
 import org.openhab.binding.satel.internal.types.OutputState;
 import org.openhab.binding.satel.internal.types.StateType;
+import org.openhab.binding.satel.internal.types.ZoneControl;
 import org.openhab.binding.satel.internal.types.ZoneState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -158,10 +162,10 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 	public boolean sendCommand(SatelMessage cmd) {
 		try {
 			if (this.sendQueue.contains(cmd)) {
-				logger.trace("Command already in the queue: {}", cmd);
+				logger.debug("Command already in the queue: {}", cmd);
 			} else {
 				this.sendQueue.put(cmd);
-				logger.debug("Command enqueued: {}", cmd);
+				logger.trace("Command enqueued: {}", cmd);
 			}
 			return true;
 		} catch (InterruptedException e) {
@@ -195,6 +199,12 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 		for (StateType state : DoorsState.values()) {
 			this.supportedCommands.put(state.getRefreshCommand(), new IntegraStateCommand(state, this));
 		}
+		for (ControlType ct : ZoneControl.values()) {
+			this.supportedCommands.put(ct.getControlCommand(), new ControlObjectCommand(ct, this));
+		}
+		for (ControlType ct : OutputControl.values()) {
+			this.supportedCommands.put(ct.getControlCommand(), new ControlObjectCommand(ct, this));
+		}
 	}
 
 	private SatelMessage readMessage() {
@@ -205,7 +215,7 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 			int syncBytes = 0;
 
 			while (true) {
-				int b = is.read();
+				byte b = (byte) is.read();
 
 				if (b == FRAME_SYNC) {
 					if (inMessage) {
