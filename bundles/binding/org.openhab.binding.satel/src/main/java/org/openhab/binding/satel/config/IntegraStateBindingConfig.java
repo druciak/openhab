@@ -43,7 +43,7 @@ import org.openhab.model.item.binding.BindingConfigParseException;
  */
 public class IntegraStateBindingConfig implements SatelBindingConfig {
 
-	private final static DecimalType DECIMAL_ONE = new DecimalType(1);
+	private static final DecimalType DECIMAL_ONE = new DecimalType(1);
 
 	private StateType stateType;
 	private int objectNumber;
@@ -87,7 +87,7 @@ public class IntegraStateBindingConfig implements SatelBindingConfig {
 				stateType = ZoneState.valueOf(configElements[idx++]);
 				break;
 			case output:
-				stateType = OutputState.state;
+				stateType = OutputState.output;
 				break;
 			case doors:
 				stateType = DoorsState.valueOf(configElements[idx++]);

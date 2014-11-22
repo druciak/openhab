@@ -47,10 +47,11 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 	private static final Logger logger = LoggerFactory.getLogger(SatelModule.class);
 
 	private static final byte FRAME_SYNC = (byte) 0xfe;
+	private static final byte FRAME_SYNC_ESC = (byte) 0xf0;
 	private static final byte[] FRAME_START = { FRAME_SYNC, FRAME_SYNC };
 	private static final byte[] FRAME_END = { FRAME_SYNC, (byte) 0x0d };
-	private static final int QUEUE_SIZE = 10; 
-	
+	private static final int QUEUE_SIZE = 10;
+
 	private final Map<Byte, SatelCommand> supportedCommands = new ConcurrentHashMap<Byte, SatelCommand>();
 	private final BlockingQueue<SatelMessage> sendQueue = new ArrayBlockingQueue<SatelMessage>(QUEUE_SIZE);
 
@@ -58,35 +59,28 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 	private String integraVersion;
 	private CommunicationChannel channel;
 	private Thread communicationThread;
-	
+
 	public enum IntegraType {
-		UNKNOWN(-1, "Unknown"),
-		I24(0, "Integra 24"), 
-		I32(1, "Integra 32"), 
-		I64(2, "Integra 64"), 
-		I128(3, "Integra 128"), 
-		I128_SIM300(4, "Integra 128-WRL SIM300"), 
-		I128_LEON(132, "Integra 128-WRL LEON"),
-		I64_PLUS(66, "Integra 64 Plus"),
-		I128_PLUS(67, "Integra 128 Plus"),
-		I256_PLUS(72, "Integra 256 Plus");
-		
+		UNKNOWN(-1, "Unknown"), I24(0, "Integra 24"), I32(1, "Integra 32"), I64(2, "Integra 64"), I128(3, "Integra 128"), I128_SIM300(
+				4, "Integra 128-WRL SIM300"), I128_LEON(132, "Integra 128-WRL LEON"), I64_PLUS(66, "Integra 64 Plus"), I128_PLUS(
+				67, "Integra 128 Plus"), I256_PLUS(72, "Integra 256 Plus");
+
 		private int code;
 		private String name;
-		
+
 		IntegraType(int code, String name) {
 			this.code = code;
 			this.name = name;
 		}
-		
+
 		int getCode() {
 			return this.code;
 		}
-		
+
 		String getName() {
 			return this.name;
 		}
-		
+
 		static IntegraType valueOf(int code) {
 			for (IntegraType val : IntegraType.values()) {
 				if (val.getCode() == code)
@@ -95,20 +89,22 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 			return UNKNOWN;
 		}
 	}
-	
+
 	protected interface CommunicationChannel {
 		InputStream getInputStream() throws IOException;
+
 		OutputStream getOutputStream() throws IOException;
+
 		void disconnect();
 	}
 
 	public SatelModule() {
 		this.integraType = IntegraType.UNKNOWN;
-		
+
 		addEventListener(this);
 		registerCommands();
 	}
-	
+
 	public IntegraType getIntegraType() {
 		return this.integraType;
 	}
@@ -158,7 +154,7 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 		this.sendQueue.clear();
 		this.integraType = IntegraType.UNKNOWN;
 	}
-	
+
 	public boolean sendCommand(SatelMessage cmd) {
 		try {
 			if (this.sendQueue.contains(cmd)) {
@@ -172,7 +168,7 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 			return false;
 		}
 	}
-	
+
 	@Override
 	public void incomingEvent(SatelEvent event) {
 		if (event instanceof IntegraVersionEvent) {
@@ -182,7 +178,7 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 			logger.info("Connection to {} initialized. Version: {}.", this.integraType.getName(), this.integraVersion);
 		}
 	}
-	
+
 	private void registerCommands() {
 		// TODO add other commands
 		this.supportedCommands.put(IntegraVersionCommand.COMMAND_CODE, new IntegraVersionCommand(this));
@@ -236,13 +232,14 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 							// in sync, we have next message byte
 							baos.write(b);
 						} else if (syncBytes == 1) {
-							if (b == 0xf0) {
+							if (b == FRAME_SYNC_ESC) {
 								baos.write(FRAME_SYNC);
 							} else if (b == FRAME_END[1]) {
 								// end of message
 								break;
 							} else {
-								logger.warn("Received invalid byte, discarding input: {}", baos.size());
+								logger.warn("Received invalid byte {}, discarding input: {}", String.format("%02X", b),
+										baos.size());
 								// clear gathered bytes, we have new message
 								inMessage = false;
 								baos.reset();
@@ -274,7 +271,7 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 	private boolean writeMessage(SatelMessage message) {
 		try {
 			OutputStream os = this.channel.getOutputStream();
-			
+
 			os.write(FRAME_START);
 			for (byte b : message.getBytes()) {
 				os.write(b);
@@ -287,13 +284,15 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 			return true;
 
 		} catch (IOException e) {
-			logger.error("Unexpected exception occurred during sending a message", e);
+			logger.error("Unexpected exception occurred during writing a message", e);
 		}
 		return false;
 	}
 
 	private void communicationLoop() {
-		while (! Thread.interrupted()) {
+		long reconnectionTime = 10*1000;
+		
+		while (!Thread.interrupted()) {
 			try {
 				SatelMessage message = this.sendQueue.take(), response = null;
 				SatelCommand command = this.supportedCommands.get(message.getCommand());
@@ -302,10 +301,21 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 					logger.error("Unsupported command: {}", message);
 					continue;
 				}
+				
+				if (this.channel == null) {
+					long connectStartTime = System.currentTimeMillis();
+					synchronized (this) {
+						this.channel = connect();
+					}
+					if (! this.isConnected()) {
+						Thread.sleep(reconnectionTime - System.currentTimeMillis() + connectStartTime);
+						continue;
+					}
+				}
 
 				logger.debug("Sending message: {}", message);
 				boolean sent = writeMessage(message);
-				
+
 				if (sent) {
 					logger.trace("Waiting for response");
 					response = this.readMessage();
@@ -314,10 +324,30 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 						command.handleResponse(response);
 					}
 				}
+
+				// if either send or receive failed, disconnect
+				if (!sent || response == null) {
+					synchronized (this) {
+						this.sendQueue.clear();
+						if (this.channel != null) {
+							this.channel.disconnect();
+							this.channel = null;
+						}
+					}
+				}
+
 			} catch (InterruptedException e) {
 				// exit thread
 			} catch (Exception e) {
+				// unexpected error, log and disconnect
 				logger.info("Unhandled exception occurred in communication loop", e);
+				synchronized (this) {
+					this.sendQueue.clear();
+					if (this.channel != null) {
+						this.channel.disconnect();
+						this.channel = null;
+					}
+				}
 			}
 		}
 	}

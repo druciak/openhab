@@ -47,7 +47,6 @@ public class SatelBinding extends AbstractActiveBinding<SatelBindingProvider> im
 	private long refreshInterval = 10000;
 	private String userCode;
 	private SatelModule satelModule = null;
-	private boolean firstRefresh;
 
 	/**
 	 * {@inheritDoc}
@@ -82,18 +81,9 @@ public class SatelBinding extends AbstractActiveBinding<SatelBindingProvider> im
 
 		// for first refresh after connecting to the module, make full refresh
 		// after that check what has changed since last refresh
-		if (this.firstRefresh) {
-			this.firstRefresh = false;
-
-			List<SatelMessage> commands = getRefreshCommands();
-			logger.trace("Sending {} refresh commands", commands.size());
-			for (SatelMessage message : commands) {
-				this.satelModule.sendCommand(message);
-			}
-		} else {
-			this.satelModule
-					.sendCommand(NewStatesCommand.buildMessage(this.satelModule.getIntegraType() == IntegraType.I256_PLUS));
-		}
+		logger.trace("Sending 'get new states' command");
+		this.satelModule
+				.sendCommand(NewStatesCommand.buildMessage(this.satelModule.getIntegraType() == IntegraType.I256_PLUS));
 	}
 
 	/**
@@ -101,7 +91,7 @@ public class SatelBinding extends AbstractActiveBinding<SatelBindingProvider> im
 	 */
 	@Override
 	public void updated(Dictionary<String, ?> config) throws ConfigurationException {
-		logger.trace("Binding configuration updated: {}", config);
+		logger.trace("Binding configuration updated");
 
 		if (config == null)
 			return;
@@ -120,7 +110,6 @@ public class SatelBinding extends AbstractActiveBinding<SatelBindingProvider> im
 
 		this.satelModule.addEventListener(this);
 		this.satelModule.open();
-		this.firstRefresh = true;
 		setProperlyConfigured(true);
 		logger.trace("Binding properly configured");
 	}
@@ -178,8 +167,7 @@ public class SatelBinding extends AbstractActiveBinding<SatelBindingProvider> im
 				SatelBindingConfig itemConfig = provider.getItemConfig(itemName);
 				Item item = provider.getItem(itemName);
 				State newState = itemConfig.convertEventToState(item, event);
-
-				if (newState != null && !newState.equals(item.getState())) {
+				if (newState != null) {
 					eventPublisher.postUpdate(itemName, newState);
 				}
 			}

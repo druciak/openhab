@@ -54,7 +54,7 @@ public class EventDispatcher {
 	public void dispatchEvent(SatelEvent event) {
 		logger.debug("Distributing event: {}", event);
 		for (EventListener listener : eventListeners) {
-			logger.trace("Distributing to {}", listener.toString());
+			logger.trace("Distributing to {}", listener);
 			listener.incomingEvent(event);
 		}
 	}

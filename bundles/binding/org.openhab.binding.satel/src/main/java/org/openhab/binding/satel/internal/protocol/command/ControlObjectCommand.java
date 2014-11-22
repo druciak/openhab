@@ -28,6 +28,8 @@ import org.slf4j.LoggerFactory;
  */
 public class ControlObjectCommand extends SatelCommand {
 	private static final Logger logger = LoggerFactory.getLogger(ControlObjectCommand.class);
+	
+	public static final byte RESPONSE_CODE = (byte) 0xef;
 
 	private ControlType controlType;
 
@@ -43,16 +45,22 @@ public class ControlObjectCommand extends SatelCommand {
 	@Override
 	public void handleResponse(SatelMessage response) {
 		// validate response
-		if (response.getCommand() != this.controlType.getControlCommand()) {
+		if (response.getCommand() != RESPONSE_CODE) {
 			logger.error("Invalid response code: {}", response.getCommand());
 			return;
 		}
-		// force outputs refresh
-		BitSet newStates = new BitSet(48);
-		// TODO generalize for all kinds of control
-		if (this.controlType instanceof OutputControl) {
-			newStates.set(OutputState.state.getRefreshCommand());
-			this.getEventDispatcher().dispatchEvent(new NewStatesEvent(newStates));
+		if (response.getPayload().length != 1) {
+			logger.error("Invalid payload length: {}", response.getPayload().length);
+			return;
+		}
+		if (commandSucceeded(response)) {
+			// force outputs refresh
+			BitSet newStates = new BitSet(48);
+			// TODO generalize for all kinds of control
+			if (this.controlType instanceof OutputControl) {
+				newStates.set(OutputState.output.getRefreshCommand());
+				this.getEventDispatcher().dispatchEvent(new NewStatesEvent(newStates));
+			}
 		}
 	}
 }

@@ -10,6 +10,8 @@ package org.openhab.binding.satel.internal.protocol.command;
 
 import org.openhab.binding.satel.internal.event.EventDispatcher;
 import org.openhab.binding.satel.internal.protocol.SatelMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * TODO document me!
@@ -18,6 +20,7 @@ import org.openhab.binding.satel.internal.protocol.SatelMessage;
  * @since 1.7.0
  */
 public abstract class SatelCommand {
+	private static final Logger logger = LoggerFactory.getLogger(SatelCommand.class);
 
 	/**
 	 * Used in extended (INT-RS v2.xx) command version.
@@ -62,6 +65,59 @@ public abstract class SatelCommand {
 		}
 
 		return bytes;
+	}
+	
+	protected boolean commandSucceeded(SatelMessage response) {
+		byte responseCode = response.getPayload()[0];
+		String errorMsg;
+		
+		switch (responseCode) {
+		case 0:
+			// success
+			return true;
+		case 0x01:
+			errorMsg = "Requesting user code not found";
+			break;
+		case 0x02:
+			errorMsg = "No access";
+			break;
+		case 0x03:
+			errorMsg = "Selected user does not exist";
+			break;
+		case 0x04:
+			errorMsg = "Selected user already exists";
+			break;
+		case 0x05:
+			errorMsg = "Wrong code or code already exists";
+			break;
+		case 0x06:
+			errorMsg = "Telephone code already exists";
+			break;
+		case 0x07:
+			errorMsg = "Changed code is the same";
+			break;
+		case 0x08:
+			errorMsg = "Other error";
+			break;
+		case 0x11:
+			errorMsg = "Can not arm, but can use force arm";
+			break;
+		case 0x12:
+			errorMsg = "Can not arm";
+			break;
+		case (byte) 0xff:
+			logger.trace("Command accepted");
+			return true;
+		default:
+			if (responseCode >= 0x80 && responseCode <= 0x8f) {
+				errorMsg = String.format("Other error: {}", responseCode);
+			} else {
+				errorMsg = String.format("Unknown response code: {}", responseCode);
+			}
+		}
+		
+		logger.error(errorMsg);
+		return false;
 	}
 
 	/**

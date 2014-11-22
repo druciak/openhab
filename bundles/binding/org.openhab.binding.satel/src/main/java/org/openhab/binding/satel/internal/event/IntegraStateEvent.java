@@ -43,4 +43,16 @@ public class IntegraStateEvent implements SatelEvent {
 	public int statesSet() {
 		return stateBits.cardinality();
 	}
+
+	@Override
+	public String toString() {
+		StringBuilder bitsStr = new StringBuilder();
+		for (int i = this.stateBits.nextSetBit(0); i >= 0; i = this.stateBits.nextSetBit(i + 1)) {
+			if (bitsStr.length() > 0) {
+				bitsStr.append(",");
+			}
+			bitsStr.append(String.format("%02X", i+1));
+		}
+		return String.format("IntegraStateEvent: state = %s, changed = %s", stateType, bitsStr);
+	}
 }
