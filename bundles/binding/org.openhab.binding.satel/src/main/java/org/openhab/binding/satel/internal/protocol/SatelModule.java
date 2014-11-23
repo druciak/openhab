@@ -13,6 +13,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,6 +31,7 @@ import org.openhab.binding.satel.internal.protocol.command.SatelCommand;
 import org.openhab.binding.satel.internal.types.ControlType;
 import org.openhab.binding.satel.internal.types.DoorsState;
 import org.openhab.binding.satel.internal.types.InputState;
+import org.openhab.binding.satel.internal.types.IntegraType;
 import org.openhab.binding.satel.internal.types.OutputControl;
 import org.openhab.binding.satel.internal.types.OutputState;
 import org.openhab.binding.satel.internal.types.StateType;
@@ -56,39 +59,10 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 	private final BlockingQueue<SatelMessage> sendQueue = new ArrayBlockingQueue<SatelMessage>(QUEUE_SIZE);
 
 	private IntegraType integraType;
+	private int timeout;
 	private String integraVersion;
 	private CommunicationChannel channel;
 	private Thread communicationThread;
-
-	public enum IntegraType {
-		UNKNOWN(-1, "Unknown"), I24(0, "Integra 24"), I32(1, "Integra 32"), I64(2, "Integra 64"), I128(3, "Integra 128"), I128_SIM300(
-				4, "Integra 128-WRL SIM300"), I128_LEON(132, "Integra 128-WRL LEON"), I64_PLUS(66, "Integra 64 Plus"), I128_PLUS(
-				67, "Integra 128 Plus"), I256_PLUS(72, "Integra 256 Plus");
-
-		private int code;
-		private String name;
-
-		IntegraType(int code, String name) {
-			this.code = code;
-			this.name = name;
-		}
-
-		int getCode() {
-			return this.code;
-		}
-
-		String getName() {
-			return this.name;
-		}
-
-		static IntegraType valueOf(int code) {
-			for (IntegraType val : IntegraType.values()) {
-				if (val.getCode() == code)
-					return val;
-			}
-			return UNKNOWN;
-		}
-	}
 
 	protected interface CommunicationChannel {
 		InputStream getInputStream() throws IOException;
@@ -98,8 +72,9 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 		void disconnect();
 	}
 
-	public SatelModule() {
+	public SatelModule(int timeout) {
 		this.integraType = IntegraType.UNKNOWN;
+		this.timeout = timeout;
 
 		addEventListener(this);
 		registerCommands();
@@ -107,6 +82,10 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 
 	public IntegraType getIntegraType() {
 		return this.integraType;
+	}
+
+	public int getTimeout() {
+		return this.timeout;
 	}
 
 	public boolean isConnected() {
@@ -122,7 +101,6 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 	public synchronized void open() {
 		this.channel = connect();
 		if (this.channel == null) {
-			close();
 			return;
 		}
 		this.communicationThread = new Thread() {
@@ -147,11 +125,7 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 			}
 			this.communicationThread = null;
 		}
-		if (this.channel != null) {
-			this.channel.disconnect();
-			this.channel = null;
-		}
-		this.sendQueue.clear();
+		this.disconnect();
 		this.integraType = IntegraType.UNKNOWN;
 	}
 
@@ -288,10 +262,19 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 		}
 		return false;
 	}
+	
+	private synchronized void disconnect() {
+		this.sendQueue.clear();
+		if (this.channel != null) {
+			this.channel.disconnect();
+			this.channel = null;
+		}
+	}
 
 	private void communicationLoop() {
-		long reconnectionTime = 10*1000;
-		
+		Timer timeoutTimer = new Timer();
+		long reconnectionTime = 10 * 1000;
+
 		while (!Thread.interrupted()) {
 			try {
 				SatelMessage message = this.sendQueue.take(), response = null;
@@ -301,18 +284,28 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 					logger.error("Unsupported command: {}", message);
 					continue;
 				}
-				
+
 				if (this.channel == null) {
 					long connectStartTime = System.currentTimeMillis();
 					synchronized (this) {
 						this.channel = connect();
 					}
-					if (! this.isConnected()) {
+					if (!this.isConnected()) {
 						Thread.sleep(reconnectionTime - System.currentTimeMillis() + connectStartTime);
 						continue;
 					}
 				}
-
+				
+				// set timer to disconnect in case send 
+				// or receive operation took too long 
+				timeoutTimer.schedule(new TimerTask() {
+					@Override
+					public void run() {
+						logger.debug("Send/receive timeout, disconnecting module.");
+						SatelModule.this.disconnect();
+					}
+				}, this.timeout);
+				
 				logger.debug("Sending message: {}", message);
 				boolean sent = writeMessage(message);
 
@@ -324,29 +317,25 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 						command.handleResponse(response);
 					}
 				}
+				
+				// command is sent and response received - we can cancel timeout timer
+				timeoutTimer.cancel();
 
 				// if either send or receive failed, disconnect
 				if (!sent || response == null) {
-					synchronized (this) {
-						this.sendQueue.clear();
-						if (this.channel != null) {
-							this.channel.disconnect();
-							this.channel = null;
-						}
-					}
+					this.disconnect();
 				}
 
 			} catch (InterruptedException e) {
 				// exit thread
 			} catch (Exception e) {
 				// unexpected error, log and disconnect
-				logger.info("Unhandled exception occurred in communication loop", e);
-				synchronized (this) {
-					this.sendQueue.clear();
-					if (this.channel != null) {
-						this.channel.disconnect();
-						this.channel = null;
-					}
+				logger.info("Unhandled exception occurred in communication loop, disconnecting.", e);
+				this.disconnect();
+				// if the module is not initialized yet,
+				// put initialization command in the queue
+				if (!this.isInitialized()) {
+					sendCommand(IntegraVersionCommand.buildMessage());
 				}
 			}
 		}

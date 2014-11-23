@@ -22,6 +22,7 @@ public class IntRSModule extends SatelModule {
 	private static final Logger logger = LoggerFactory.getLogger(Ethm1Module.class);
 	
 	public IntRSModule(String port, int timeout) throws ConfigurationException {
+		super(timeout);
 		throw new ConfigurationException("port", "INT-RS module not supported yet");
 	}
 

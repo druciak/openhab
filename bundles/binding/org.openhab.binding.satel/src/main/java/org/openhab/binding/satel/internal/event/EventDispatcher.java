@@ -15,7 +15,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * TODO document me!
+ * Allows distributing incoming event to all registered listeners. Listeners
+ * must implement {@link EventListener} interface.
  * 
  * @author Krzysztof Goworek
  * @since 1.7.0

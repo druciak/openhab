@@ -29,14 +29,14 @@ public class Ethm1Module extends SatelModule {
 
 	private String host;
 	private int port;
-	private int timeout;
 	private String encryptionKey;
 	private Socket socket;
 
 	public Ethm1Module(String host, int port, int timeout, String encryptionKey) {
+		super(timeout);
+		
 		this.host = host;
 		this.port = port;
-		this.timeout = timeout;
 		this.encryptionKey = encryptionKey;
 		this.socket = null;
 	}
@@ -52,8 +52,7 @@ public class Ethm1Module extends SatelModule {
 				return null;
 			}
 			this.socket = new Socket();
-			this.socket.connect(new InetSocketAddress(this.host, this.port), this.timeout);
-			this.socket.setSoTimeout(this.timeout);
+			this.socket.connect(new InetSocketAddress(this.host, this.port), this.getTimeout());
 			
 			return new CommunicationChannel() {
 				@Override

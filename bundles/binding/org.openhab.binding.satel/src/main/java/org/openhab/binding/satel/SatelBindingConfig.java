@@ -10,7 +10,7 @@ package org.openhab.binding.satel;
 
 import org.openhab.binding.satel.internal.event.SatelEvent;
 import org.openhab.binding.satel.internal.protocol.SatelMessage;
-import org.openhab.binding.satel.internal.protocol.SatelModule.IntegraType;
+import org.openhab.binding.satel.internal.types.IntegraType;
 import org.openhab.core.binding.BindingConfig;
 import org.openhab.core.items.Item;
 import org.openhab.core.types.Command;
