@@ -62,7 +62,7 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 	private int timeout;
 	private String integraVersion;
 	private CommunicationChannel channel;
-	private Thread communicationThread;
+	private CommunicationThread communicationThread;
 
 	protected interface CommunicationChannel {
 		InputStream getInputStream() throws IOException;
@@ -99,33 +99,16 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 	protected abstract CommunicationChannel connect();
 
 	public synchronized void open() {
-		this.channel = connect();
-		if (this.channel == null) {
-			return;
-		}
-		this.communicationThread = new Thread() {
-			@Override
-			public void run() {
-				logger.info("Communication thread started");
-				communicationLoop();
-				logger.info("Communication thread stopped");
-			}
-		};
-		this.communicationThread.start();
-		// get Integra version
+		this.communicationThread = new CommunicationThread();
+		// get Integra version to properly initialize the module
 		sendCommand(IntegraVersionCommand.buildMessage());
 	}
 
 	public synchronized void close() {
 		if (this.communicationThread != null) {
-			this.communicationThread.interrupt();
-			try {
-				this.communicationThread.join();
-			} catch (InterruptedException e) {
-			}
+			this.communicationThread.stopCommunication();
 			this.communicationThread = null;
 		}
-		this.disconnect();
 		this.integraType = IntegraType.UNKNOWN;
 	}
 
@@ -154,7 +137,6 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 	}
 
 	private void registerCommands() {
-		// TODO add other commands
 		this.supportedCommands.put(IntegraVersionCommand.COMMAND_CODE, new IntegraVersionCommand(this));
 		this.supportedCommands.put(NewStatesCommand.COMMAND_CODE, new NewStatesCommand(this));
 		for (StateType state : ZoneState.values()) {
@@ -230,6 +212,11 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 					}
 					syncBytes = 0;
 				}
+
+				// if meanwhile thread has been interrupted, exit the loop
+				if (Thread.interrupted()) {
+					return null;
+				}
 			}
 
 			// return read message
@@ -260,83 +247,144 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 		} catch (IOException e) {
 			logger.error("Unexpected exception occurred during writing a message", e);
 		}
+
 		return false;
 	}
-	
+
 	private synchronized void disconnect() {
 		this.sendQueue.clear();
 		if (this.channel != null) {
 			this.channel.disconnect();
 			this.channel = null;
 		}
+		// if the module is not initialized yet
+		// and communication thread is not stopped,
+		// put initialization command in the queue
+		// to schedule reconnect
+		if (!this.isInitialized() && this.communicationThread.isAlive()) {
+			sendCommand(IntegraVersionCommand.buildMessage());
+		}
 	}
 
-	private void communicationLoop() {
-		Timer timeoutTimer = new Timer();
-		long reconnectionTime = 10 * 1000;
+	private boolean processNextCommand(TimeoutTimerTask timeoutTimerTask) {
+		long reconnectionTime = 2 * this.timeout;
 
-		while (!Thread.interrupted()) {
+		try {
+			SatelMessage message = this.sendQueue.take(), response = null;
+			SatelCommand command = this.supportedCommands.get(message.getCommand());
+
+			if (command == null) {
+				logger.error("Unsupported command: {}", message);
+				return true;
+			}
+
+			if (this.channel == null) {
+				long connectStartTime = System.currentTimeMillis();
+				synchronized (this) {
+					this.channel = connect();
+				}
+				if (!this.isConnected()) {
+					Thread.sleep(reconnectionTime - System.currentTimeMillis() + connectStartTime);
+					return true;
+				}
+			}
+
+			logger.debug("Sending message: {}", message);
+			timeoutTimerTask.startCounting();
+			boolean sent = writeMessage(message);
+
+			if (sent) {
+				logger.trace("Waiting for response");
+				timeoutTimerTask.startCounting();
+				response = this.readMessage();
+				if (response != null) {
+					logger.debug("Got response: {}", response);
+					command.handleResponse(response);
+				}
+			}
+
+			return sent && response != null;
+
+		} catch (InterruptedException e) {
+			// ignore
+		} catch (Exception e) {
+			// unexpected error, log and disconnect
+			logger.info("Unhandled exception occurred in communication loop, disconnecting.", e);
+		} finally {
+			// disable timeout on exit
+			timeoutTimerTask.stopCounting();
+		}
+
+		return false;
+	}
+
+	private class CommunicationThread extends Thread {
+		private volatile boolean threadStopped;
+
+		public CommunicationThread() {
+			this.threadStopped = false;
+			this.start();
+		}
+
+		@Override
+		public void run() {
+			logger.info("Communication thread started");
+
+			// set timer to disconnect in case send
+			// or receive operation takes too long
+			Timer timeoutTimer = new Timer();
+			TimeoutTimerTask timeoutTimerTask = new TimeoutTimerTask(this, timeout);
+			timeoutTimer.schedule(timeoutTimerTask, 0, 200);
+
+			while (!this.threadStopped) {
+				
+				if (!processNextCommand(timeoutTimerTask)) {
+					// if something went wrong, disconnect
+					disconnect();
+				}
+			}
+
+			timeoutTimer.cancel();
+			logger.info("Communication thread stopped");
+		}
+
+		void stopCommunication() {
+			this.threadStopped = true;
+			this.interrupt();
 			try {
-				SatelMessage message = this.sendQueue.take(), response = null;
-				SatelCommand command = this.supportedCommands.get(message.getCommand());
-
-				if (command == null) {
-					logger.error("Unsupported command: {}", message);
-					continue;
-				}
-
-				if (this.channel == null) {
-					long connectStartTime = System.currentTimeMillis();
-					synchronized (this) {
-						this.channel = connect();
-					}
-					if (!this.isConnected()) {
-						Thread.sleep(reconnectionTime - System.currentTimeMillis() + connectStartTime);
-						continue;
-					}
-				}
-				
-				// set timer to disconnect in case send 
-				// or receive operation took too long 
-				timeoutTimer.schedule(new TimerTask() {
-					@Override
-					public void run() {
-						logger.debug("Send/receive timeout, disconnecting module.");
-						SatelModule.this.disconnect();
-					}
-				}, this.timeout);
-				
-				logger.debug("Sending message: {}", message);
-				boolean sent = writeMessage(message);
-
-				if (sent) {
-					logger.trace("Waiting for response");
-					response = this.readMessage();
-					if (response != null) {
-						logger.debug("Got response: {}", response);
-						command.handleResponse(response);
-					}
-				}
-				
-				// command is sent and response received - we can cancel timeout timer
-				timeoutTimer.cancel();
-
-				// if either send or receive failed, disconnect
-				if (!sent || response == null) {
-					this.disconnect();
-				}
-
+				this.join();
 			} catch (InterruptedException e) {
-				// exit thread
-			} catch (Exception e) {
-				// unexpected error, log and disconnect
-				logger.info("Unhandled exception occurred in communication loop, disconnecting.", e);
-				this.disconnect();
-				// if the module is not initialized yet,
-				// put initialization command in the queue
-				if (!this.isInitialized()) {
-					sendCommand(IntegraVersionCommand.buildMessage());
-				}
+				// ignore
+			}
+		}
+	}
+
+	private static class TimeoutTimerTask extends TimerTask {
+		private Thread thread;
+		private int timeout;
+		private volatile long lastActivity = 0;
+
+		TimeoutTimerTask(Thread thread, int timeout) {
+			this.thread = thread;
+			this.timeout = timeout;
+		}
+
+		public void startCounting() {
+			this.lastActivity = System.currentTimeMillis();
+		}
+
+		public void stopCounting() {
+			this.lastActivity = 0;
+		}
+
+		@Override
+		public void run() {
+			long timePassed = (this.lastActivity == 0) ? 0 : System.currentTimeMillis() - this.lastActivity;
+
+			if (timePassed > this.timeout) {
+				logger.debug("Send/receive timeout, disconnecting module.");
+				stopCounting();
+				this.thread.interrupt();
 			}
 		}
 	}
