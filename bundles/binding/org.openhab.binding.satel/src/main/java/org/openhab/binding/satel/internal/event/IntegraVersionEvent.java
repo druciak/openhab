@@ -8,8 +8,10 @@
  */
 package org.openhab.binding.satel.internal.event;
 
+import org.openhab.binding.satel.internal.types.IntegraType;
+
 /**
- * TODO document me!
+ * Event class describing type and version of connected Integra system.
  * 
  * @author Krzysztof Goworek
  * @since 1.7.0
@@ -28,22 +30,38 @@ public class IntegraVersionEvent implements SatelEvent {
 		this.settingsInFlash = settingsInFlash;
 	}
 
+	/**
+	 * @return Integra type
+	 * @see IntegraType
+	 */
 	public byte getType() {
 		return type;
 	}
 
+	/**
+	 * @return firmware version and date
+	 */
 	public String getVersion() {
 		return version;
 	}
 
+	/**
+	 * @return firmware language
+	 */
 	public byte getLanguage() {
 		return language;
 	}
 
+	/**
+	 * @return <code>true</code> if configuration is stored in flash memory
+	 */
 	public boolean getSettingsInflash() {
 		return this.settingsInFlash;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public String toString() {
 		return String.format("IntegraVersionEvent: type = %d, version = %s, language = %d, settingsInFlash = %b",

@@ -9,7 +9,7 @@
 package org.openhab.binding.satel.internal.event;
 
 /**
- * TODO document me!
+ * Simple interface that all event classes must implement.
  * 
  * @author Krzysztof Goworek
  * @since 1.7.0

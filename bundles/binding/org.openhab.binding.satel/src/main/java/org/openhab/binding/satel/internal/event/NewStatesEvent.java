@@ -11,7 +11,7 @@ package org.openhab.binding.satel.internal.event;
 import java.util.BitSet;
 
 /**
- * TODO document me!
+ * Event class describing changes in Integra state since last state read.
  * 
  * @author Krzysztof Goworek
  * @since 1.7.0
@@ -20,18 +20,40 @@ public class NewStatesEvent implements SatelEvent {
 
 	private BitSet newStates;
 
+	/**
+	 * Constructs event class from given {@link BitSet}.
+	 * 
+	 * @param newStates
+	 *            changed states as {@link BitSet}
+	 */
 	public NewStatesEvent(BitSet newStates) {
 		this.newStates = newStates;
 	}
 
+	/**
+	 * Constructs event class from given byte array.
+	 * 
+	 * @param newStates
+	 *            changed states as byte array
+	 */
 	public NewStatesEvent(byte[] newStates) {
 		this(BitSet.valueOf(newStates));
 	}
 
+	/**
+	 * Checks if specified state has changed since last read.
+	 * 
+	 * @param nbr
+	 *            state number to check
+	 * @return <code>true</code> if state has changed
+	 */
 	public boolean isNew(int nbr) {
 		return newStates.get(nbr);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public String toString() {
 		StringBuilder newStatesStr = new StringBuilder();
@@ -39,7 +61,7 @@ public class NewStatesEvent implements SatelEvent {
 			if (newStatesStr.length() > 0) {
 				newStatesStr.append(",");
 			}
-			newStatesStr.append(String.format("%02X", i+1));
+			newStatesStr.append(String.format("%02X", i + 1));
 		}
 		return String.format("NewStatesEvent: changed = {%s}", newStatesStr);
 	}

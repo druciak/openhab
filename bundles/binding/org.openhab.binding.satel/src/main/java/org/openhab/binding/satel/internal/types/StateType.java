@@ -9,7 +9,7 @@
 package org.openhab.binding.satel.internal.types;
 
 /**
- * TODO document me!
+ * Base of all kinds of Integra state.
  * 
  * @author Krzysztof Goworek
  * @since 1.7.0

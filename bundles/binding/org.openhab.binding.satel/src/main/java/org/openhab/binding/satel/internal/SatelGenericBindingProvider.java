@@ -23,7 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * TODO document me!
+ * This class is responsible for parsing the binding configuration.
  * 
  * @author Krzysztof Goworek
  * @since 1.7.0
