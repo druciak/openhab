@@ -23,6 +23,18 @@ public class IntegraVersionEvent implements SatelEvent {
 	private byte language;
 	private boolean settingsInFlash;
 
+	/**
+	 * Constructs new event class.
+	 * 
+	 * @param type
+	 *            Integra type
+	 * @param version
+	 *            string describing version number and firmware revision
+	 * @param language
+	 *            firmware language: 1 - english
+	 * @param settingsInFlash
+	 *            settings stored in flash memory
+	 */
 	public IntegraVersionEvent(byte type, String version, byte language, boolean settingsInFlash) {
 		this.type = type;
 		this.version = version;
