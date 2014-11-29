@@ -168,6 +168,7 @@ public class SatelBinding extends AbstractActiveBinding<SatelBindingProvider> im
 				Item item = provider.getItem(itemName);
 				State newState = itemConfig.convertEventToState(item, event);
 				if (newState != null) {
+					logger.debug("Updating item state: item = {}, state = {}, event = {}", itemName, newState, event);
 					eventPublisher.postUpdate(itemName, newState);
 				}
 			}
