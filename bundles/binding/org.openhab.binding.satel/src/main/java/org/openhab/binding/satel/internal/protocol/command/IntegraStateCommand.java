@@ -16,8 +16,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Command class for commands that return state of Integra objects, like zones
- * (armed, alarm, entry time), inputs (violation, tamper, alarm), outputs and
+ * Command class for commands that return state of Integra objects, like partitions
+ * (armed, alarm, entry time), zones (violation, tamper, alarm), outputs and
  * doors (opened, opened long).
  * 
  * @author Krzysztof Goworek
@@ -48,7 +48,7 @@ public class IntegraStateCommand extends SatelCommand {
 	 *            tpye of state to get
 	 * @param extended
 	 *            if <code>true</code> command will be sent as extended (256
-	 *            inputs or outputs)
+	 *            zones or outputs)
 	 * @return built message object
 	 */
 	public static SatelMessage buildMessage(StateType stateType, boolean extended) {
@@ -76,12 +76,12 @@ public class IntegraStateCommand extends SatelCommand {
 
 	private boolean isPayloadLengthValid(int length) {
 		switch (this.stateType.getObjectType()) {
-		case zone:
+		case PARTITION:
 			return length == 4;
-		case input:
-		case output:
+		case ZONE:
+		case OUTPUT:
 			return length == 16 || length == 32;
-		case doors:
+		case DOORS:
 			return length == 8;
 		}
 		return false;

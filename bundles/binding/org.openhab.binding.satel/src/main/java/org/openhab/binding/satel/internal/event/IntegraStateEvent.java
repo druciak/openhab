@@ -11,13 +11,13 @@ package org.openhab.binding.satel.internal.event;
 import java.util.BitSet;
 
 import org.openhab.binding.satel.internal.types.DoorsState;
-import org.openhab.binding.satel.internal.types.InputState;
+import org.openhab.binding.satel.internal.types.ZoneState;
 import org.openhab.binding.satel.internal.types.OutputState;
 import org.openhab.binding.satel.internal.types.StateType;
-import org.openhab.binding.satel.internal.types.ZoneState;
+import org.openhab.binding.satel.internal.types.PartitionState;
 
 /**
- * Event class describing current state of zones/inputs/outputs/doors.
+ * Event class describing current state of zones/partitions/outputs/doors.
  * 
  * @author Krzysztof Goworek
  * @since 1.7.0
@@ -44,8 +44,8 @@ public class IntegraStateEvent implements SatelEvent {
 	 * Returns type of state described by this event object.
 	 * 
 	 * @return type of state for this event
-	 * @see InputState
 	 * @see ZoneState
+	 * @see PartitionState
 	 * @see OutputState
 	 * @see DoorsState
 	 */

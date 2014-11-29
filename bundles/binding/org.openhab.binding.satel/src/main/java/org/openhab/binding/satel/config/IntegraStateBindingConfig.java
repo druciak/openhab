@@ -18,14 +18,14 @@ import org.openhab.binding.satel.internal.protocol.SatelMessage;
 import org.openhab.binding.satel.internal.protocol.command.ControlObjectCommand;
 import org.openhab.binding.satel.internal.protocol.command.IntegraStateCommand;
 import org.openhab.binding.satel.internal.types.DoorsState;
-import org.openhab.binding.satel.internal.types.InputState;
+import org.openhab.binding.satel.internal.types.ZoneState;
 import org.openhab.binding.satel.internal.types.IntegraType;
 import org.openhab.binding.satel.internal.types.ObjectType;
 import org.openhab.binding.satel.internal.types.OutputControl;
 import org.openhab.binding.satel.internal.types.OutputState;
 import org.openhab.binding.satel.internal.types.StateType;
-import org.openhab.binding.satel.internal.types.ZoneControl;
-import org.openhab.binding.satel.internal.types.ZoneState;
+import org.openhab.binding.satel.internal.types.PartitionControl;
+import org.openhab.binding.satel.internal.types.PartitionState;
 import org.openhab.core.items.Item;
 import org.openhab.core.library.items.ContactItem;
 import org.openhab.core.library.items.NumberItem;
@@ -39,7 +39,7 @@ import org.openhab.model.item.binding.BindingConfigParseException;
 
 /**
  * This class implements binding configuration for all items that represents
- * Integra zones/inputs/outputs state.
+ * Integra zones/partitions/outputs state.
  * 
  * @author Krzysztof Goworek
  * @since 1.7.0
@@ -75,7 +75,7 @@ public class IntegraStateBindingConfig implements SatelBindingConfig {
 
 		// parse object type, mandatory
 		try {
-			objectType = ObjectType.valueOf(configElements[idx++]);
+			objectType = ObjectType.valueOf(configElements[idx++].toUpperCase());
 		} catch (Exception e) {
 			// wrong config type, skip parsing
 			return null;
@@ -87,16 +87,16 @@ public class IntegraStateBindingConfig implements SatelBindingConfig {
 
 		try {
 			switch (objectType) {
-			case input:
-				stateType = InputState.valueOf(configElements[idx++]);
-				break;
-			case zone:
+			case ZONE:
 				stateType = ZoneState.valueOf(configElements[idx++]);
 				break;
-			case output:
-				stateType = OutputState.output;
+			case PARTITION:
+				stateType = PartitionState.valueOf(configElements[idx++]);
 				break;
-			case doors:
+			case OUTPUT:
+				stateType = OutputState.OUTPUT;
+				break;
+			case DOORS:
 				stateType = DoorsState.valueOf(configElements[idx++]);
 				break;
 			}
@@ -180,20 +180,20 @@ public class IntegraStateBindingConfig implements SatelBindingConfig {
 			boolean force_arm = this.options.containsKey("force_arm");
 
 			switch (this.stateType.getObjectType()) {
-			case output:
+			case OUTPUT:
 				byte[] outputs = getObjectBitset((integraType == IntegraType.I256_PLUS) ? 32 : 16);
 				return ControlObjectCommand.buildMessage(switchOn ? OutputControl.on : OutputControl.off, outputs,
 						userCode);
 
-			case doors:
+			case DOORS:
 				break;
 
-			case input:
+			case ZONE:
 				break;
 
-			case zone:
-				byte[] zones = getObjectBitset(4);
-				switch ((ZoneState) this.stateType) {
+			case PARTITION:
+				byte[] partitions = getObjectBitset(4);
+				switch ((PartitionState) this.stateType) {
 				// clear alarms on OFF command
 				case alarm:
 				case alarm_memory:
@@ -204,23 +204,23 @@ public class IntegraStateBindingConfig implements SatelBindingConfig {
 					if (switchOn) {
 						return null;
 					} else {
-						return ControlObjectCommand.buildMessage(ZoneControl.clear_alarm, zones, userCode);
+						return ControlObjectCommand.buildMessage(PartitionControl.clear_alarm, partitions, userCode);
 					}
 
 					// arm or disarm, depending on command
 				case armed:
 				case really_armed:
-					return ControlObjectCommand.buildMessage(switchOn ? (force_arm ? ZoneControl.force_arm_mode_0
-							: ZoneControl.arm_mode_0) : ZoneControl.disarm, zones, userCode);
+					return ControlObjectCommand.buildMessage(switchOn ? (force_arm ? PartitionControl.force_arm_mode_0
+							: PartitionControl.arm_mode_0) : PartitionControl.disarm, partitions, userCode);
 				case armed_mode_1:
-					return ControlObjectCommand.buildMessage(switchOn ? (force_arm ? ZoneControl.force_arm_mode_1
-							: ZoneControl.arm_mode_1) : ZoneControl.disarm, zones, userCode);
+					return ControlObjectCommand.buildMessage(switchOn ? (force_arm ? PartitionControl.force_arm_mode_1
+							: PartitionControl.arm_mode_1) : PartitionControl.disarm, partitions, userCode);
 				case armed_mode_2:
-					return ControlObjectCommand.buildMessage(switchOn ? (force_arm ? ZoneControl.force_arm_mode_2
-							: ZoneControl.arm_mode_2) : ZoneControl.disarm, zones, userCode);
+					return ControlObjectCommand.buildMessage(switchOn ? (force_arm ? PartitionControl.force_arm_mode_2
+							: PartitionControl.arm_mode_2) : PartitionControl.disarm, partitions, userCode);
 				case armed_mode_3:
-					return ControlObjectCommand.buildMessage(switchOn ? (force_arm ? ZoneControl.force_arm_mode_3
-							: ZoneControl.arm_mode_3) : ZoneControl.disarm, zones, userCode);
+					return ControlObjectCommand.buildMessage(switchOn ? (force_arm ? PartitionControl.force_arm_mode_3
+							: PartitionControl.arm_mode_3) : PartitionControl.disarm, partitions, userCode);
 
 					// do nothing for other types of state
 				default:

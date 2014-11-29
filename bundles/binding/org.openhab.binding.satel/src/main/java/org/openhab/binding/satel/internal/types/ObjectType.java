@@ -15,5 +15,5 @@ package org.openhab.binding.satel.internal.types;
  * @since 1.7.0
  */
 public enum ObjectType {
-	input, zone, output, doors;
+	ZONE, PARTITION, OUTPUT, DOORS;
 }

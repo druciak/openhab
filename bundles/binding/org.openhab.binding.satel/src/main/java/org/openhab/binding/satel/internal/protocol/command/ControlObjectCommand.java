@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Command class for commands that control (change) state of Integra objects,
- * like zones (arm, disarm), inputs (bypass, unbypass) outputs (on, off,
+ * like partitions (arm, disarm), zones (bypass, unbypass) outputs (on, off,
  * switch), etc.
  * 
  * @author Krzysztof Goworek
@@ -82,7 +82,7 @@ public class ControlObjectCommand extends SatelCommand {
 			BitSet newStates = new BitSet(48);
 			// TODO generalize for all kinds of control
 			if (this.controlType instanceof OutputControl) {
-				newStates.set(OutputState.output.getRefreshCommand());
+				newStates.set(OutputState.OUTPUT.getRefreshCommand());
 				this.getEventDispatcher().dispatchEvent(new NewStatesEvent(newStates));
 			}
 		}

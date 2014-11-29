@@ -37,7 +37,7 @@ public class NewStatesCommand extends SatelCommand {
 	 * Builds message to get list of new states.
 	 * @param extended
 	 *            if <code>true</code> command will be sent as extended (256
-	 *            inputs or outputs)
+	 *            zones or outputs)
 	 * @return built message object
 	 */
 	public static SatelMessage buildMessage(boolean extended) {

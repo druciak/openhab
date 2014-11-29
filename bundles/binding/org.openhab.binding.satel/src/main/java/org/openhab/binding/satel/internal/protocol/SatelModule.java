@@ -30,13 +30,13 @@ import org.openhab.binding.satel.internal.protocol.command.NewStatesCommand;
 import org.openhab.binding.satel.internal.protocol.command.SatelCommand;
 import org.openhab.binding.satel.internal.types.ControlType;
 import org.openhab.binding.satel.internal.types.DoorsState;
-import org.openhab.binding.satel.internal.types.InputState;
+import org.openhab.binding.satel.internal.types.ZoneState;
 import org.openhab.binding.satel.internal.types.IntegraType;
 import org.openhab.binding.satel.internal.types.OutputControl;
 import org.openhab.binding.satel.internal.types.OutputState;
 import org.openhab.binding.satel.internal.types.StateType;
-import org.openhab.binding.satel.internal.types.ZoneControl;
-import org.openhab.binding.satel.internal.types.ZoneState;
+import org.openhab.binding.satel.internal.types.PartitionControl;
+import org.openhab.binding.satel.internal.types.PartitionState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -194,10 +194,10 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 	private void registerCommands() {
 		this.supportedCommands.put(IntegraVersionCommand.COMMAND_CODE, new IntegraVersionCommand(this));
 		this.supportedCommands.put(NewStatesCommand.COMMAND_CODE, new NewStatesCommand(this));
-		for (StateType state : ZoneState.values()) {
+		for (StateType state : PartitionState.values()) {
 			this.supportedCommands.put(state.getRefreshCommand(), new IntegraStateCommand(state, this));
 		}
-		for (StateType state : InputState.values()) {
+		for (StateType state : ZoneState.values()) {
 			this.supportedCommands.put(state.getRefreshCommand(), new IntegraStateCommand(state, this));
 		}
 		for (StateType state : OutputState.values()) {
@@ -206,7 +206,7 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 		for (StateType state : DoorsState.values()) {
 			this.supportedCommands.put(state.getRefreshCommand(), new IntegraStateCommand(state, this));
 		}
-		for (ControlType ct : ZoneControl.values()) {
+		for (ControlType ct : PartitionControl.values()) {
 			this.supportedCommands.put(ct.getControlCommand(), new ControlObjectCommand(ct, this));
 		}
 		for (ControlType ct : OutputControl.values()) {

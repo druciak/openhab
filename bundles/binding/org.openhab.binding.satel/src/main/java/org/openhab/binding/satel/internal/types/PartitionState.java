@@ -9,19 +9,20 @@
 package org.openhab.binding.satel.internal.types;
 
 /**
- * Available input states.
+ * Available partition states.
  * 
  * @author Krzysztof Goworek
  * @since 1.7.0
  */
-public enum InputState implements StateType {
-	violation(0x00), tamper(0x01), alarm(0x02), tamper_alarm(0x03), alarm_memory(0x04), tamper_alarm_memory(0x05), bypass(
-			0x06), no_violation_trouble(0x07), long_violation_trouble(0x08), isolate(0x26), masked(0x28), masked_memory(
-			0x29);
+public enum PartitionState implements StateType {
+	armed(0x09), really_armed(0x0a), armed_mode_2(0x0b), armed_mode_3(0x0c), first_code_entered(0x0d), entry_time(0x0e), exit_time_gt_10(
+			0x0f), exit_time_lt_10(0x10), temporary_blocked(0x11), blocked_for_guard(0x12), alarm(0x13), fire_alarm(
+			0x14), alarm_memory(0x15), fire_alarm_memory(0x16), violated_zones(0x25), verified_alarms(0x27), armed_mode_1(
+			0x2a), warning_alarms(0x2b);
 
 	private byte refreshCommand;
 
-	InputState(int refreshCommand) {
+	PartitionState(int refreshCommand) {
 		this.refreshCommand = (byte) refreshCommand;
 	}
 
@@ -38,6 +39,6 @@ public enum InputState implements StateType {
 	 */
 	@Override
 	public ObjectType getObjectType() {
-		return ObjectType.input;
+		return ObjectType.PARTITION;
 	}
 }

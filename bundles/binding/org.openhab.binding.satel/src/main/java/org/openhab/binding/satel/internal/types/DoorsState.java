@@ -36,6 +36,6 @@ public enum DoorsState implements StateType {
 	 */
 	@Override
 	public ObjectType getObjectType() {
-		return ObjectType.doors;
+		return ObjectType.DOORS;
 	}
 }

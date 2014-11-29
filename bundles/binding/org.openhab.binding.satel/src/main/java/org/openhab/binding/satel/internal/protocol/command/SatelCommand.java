@@ -56,7 +56,7 @@ public abstract class SatelCommand {
 	 *            command code
 	 * @param extended
 	 *            if <code>true</code> command will be sent as extended (256
-	 *            inputs or outputs)
+	 *            zones or outputs)
 	 * @return new instance of message class
 	 */
 	public static SatelMessage buildMessage(byte commandCode, boolean extended) {

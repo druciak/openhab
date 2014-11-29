@@ -36,6 +36,6 @@ public enum OutputControl implements ControlType {
 	 */
 	@Override
 	public ObjectType getObjectType() {
-		return ObjectType.output;
+		return ObjectType.OUTPUT;
 	}
 }

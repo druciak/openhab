@@ -15,7 +15,7 @@ package org.openhab.binding.satel.internal.types;
  * @since 1.7.0
  */
 public enum OutputState implements StateType {
-	output(0x17);
+	OUTPUT(0x17);
 
 	private byte refreshCommand;
 
@@ -36,6 +36,6 @@ public enum OutputState implements StateType {
 	 */
 	@Override
 	public ObjectType getObjectType() {
-		return ObjectType.output;
+		return ObjectType.OUTPUT;
 	}
 }
