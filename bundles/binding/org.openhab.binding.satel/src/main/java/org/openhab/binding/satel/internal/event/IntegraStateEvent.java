@@ -94,6 +94,7 @@ public class IntegraStateEvent implements SatelEvent {
 			}
 			bitsStr.append(Integer.toString(i + 1));
 		}
-		return String.format("IntegraStateEvent: state = %s, active = [%s]", stateType, bitsStr);
+		return String.format("IntegraStateEvent: object = %s, state = %s, active = [%s]", stateType.getObjectType(),
+				stateType, bitsStr);
 	}
 }
