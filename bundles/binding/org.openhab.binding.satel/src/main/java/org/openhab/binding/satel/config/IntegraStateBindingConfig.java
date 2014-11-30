@@ -8,7 +8,6 @@
  */
 package org.openhab.binding.satel.config;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,14 +18,14 @@ import org.openhab.binding.satel.internal.protocol.SatelMessage;
 import org.openhab.binding.satel.internal.protocol.command.ControlObjectCommand;
 import org.openhab.binding.satel.internal.protocol.command.IntegraStateCommand;
 import org.openhab.binding.satel.internal.types.DoorsState;
-import org.openhab.binding.satel.internal.types.ZoneState;
 import org.openhab.binding.satel.internal.types.IntegraType;
 import org.openhab.binding.satel.internal.types.ObjectType;
 import org.openhab.binding.satel.internal.types.OutputControl;
 import org.openhab.binding.satel.internal.types.OutputState;
-import org.openhab.binding.satel.internal.types.StateType;
 import org.openhab.binding.satel.internal.types.PartitionControl;
 import org.openhab.binding.satel.internal.types.PartitionState;
+import org.openhab.binding.satel.internal.types.StateType;
+import org.openhab.binding.satel.internal.types.ZoneState;
 import org.openhab.core.items.Item;
 import org.openhab.core.library.items.ContactItem;
 import org.openhab.core.library.items.NumberItem;
@@ -179,18 +178,15 @@ public class IntegraStateBindingConfig implements SatelBindingConfig {
 	 */
 	@Override
 	public SatelMessage handleCommand(Command command, IntegraType integraType, String userCode) {
-		if (command instanceof OnOffType) {
+		if (command instanceof OnOffType && this.objectNumber > 0) {
 			boolean switchOn = ((OnOffType) command == OnOffType.ON);
 			boolean force_arm = this.options.containsKey("FORCE_ARM");
 
 			switch (this.stateType.getObjectType()) {
 			case OUTPUT:
-				if (this.objectNumber > 0) {
-					byte[] outputs = getObjectBitset((integraType == IntegraType.I256_PLUS) ? 32 : 16);
-					return ControlObjectCommand.buildMessage(switchOn ? OutputControl.ON : OutputControl.OFF, outputs,
-							userCode);
-				}
-				break;
+				byte[] outputs = getObjectBitset((integraType == IntegraType.I256_PLUS) ? 32 : 16);
+				return ControlObjectCommand.buildMessage(switchOn ? OutputControl.ON : OutputControl.OFF, outputs,
+						userCode);
 
 			case DOORS:
 				break;
@@ -258,15 +254,8 @@ public class IntegraStateBindingConfig implements SatelBindingConfig {
 
 	private byte[] getObjectBitset(int size) {
 		byte[] bitset = new byte[size];
-		if (this.objectNumber == 0) {
-			// set all bits
-			Arrays.fill(bitset, (byte) 0xff);
-			 
-		} else {
-			// set specific bit
-			int bitNbr = this.objectNumber - 1;
-			bitset[bitNbr / 8] = (byte) (1 << (bitNbr % 8));
-		}
+		int bitNbr = this.objectNumber - 1;
+		bitset[bitNbr / 8] = (byte) (1 << (bitNbr % 8));
 		return bitset;
 	}
 }
