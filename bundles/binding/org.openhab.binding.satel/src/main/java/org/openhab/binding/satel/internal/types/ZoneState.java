@@ -15,8 +15,8 @@ package org.openhab.binding.satel.internal.types;
  * @since 1.7.0
  */
 public enum ZoneState implements StateType {
-	violation(0x00), tamper(0x01), alarm(0x02), tamper_alarm(0x03), alarm_memory(0x04), tamper_alarm_memory(0x05), bypass(
-			0x06), no_violation_trouble(0x07), long_violation_trouble(0x08), isolate(0x26), masked(0x28), masked_memory(
+	VIOLATION(0x00), TAMPER(0x01), ALARM(0x02), TAMPER_ALARM(0x03), ALARM_MEMORY(0x04), TAMPER_ALARM_MEMORY(0x05), BYPASS(
+			0x06), NO_VIOLATION_TROUBLE(0x07), LONG_VIOLATION_TROUBLE(0x08), ISOLATE(0x26), MASKED(0x28), MASKED_MEMORY(
 			0x29);
 
 	private byte refreshCommand;

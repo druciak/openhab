@@ -15,7 +15,7 @@ package org.openhab.binding.satel.internal.types;
  * @since 1.7.0
  */
 public enum OutputControl implements ControlType {
-	on(0x88), off(0x89), toggle(0x91);
+	ON(0x88), OFF(0x89), TOGGLE(0x91);
 
 	private byte controlCommand;
 

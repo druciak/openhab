@@ -15,7 +15,7 @@ package org.openhab.binding.satel.internal.types;
  * @since 1.7.0
  */
 public enum DoorsState implements StateType {
-	opened(0x18), opened_long(0x19);
+	OPENED(0x18), OPENED_LONG(0x19);
 
 	private byte refreshCommand;
 

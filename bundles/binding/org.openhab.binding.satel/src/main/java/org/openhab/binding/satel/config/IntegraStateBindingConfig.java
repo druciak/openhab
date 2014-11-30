@@ -88,16 +88,16 @@ public class IntegraStateBindingConfig implements SatelBindingConfig {
 		try {
 			switch (objectType) {
 			case ZONE:
-				stateType = ZoneState.valueOf(configElements[idx++]);
+				stateType = ZoneState.valueOf(configElements[idx++].toUpperCase());
 				break;
 			case PARTITION:
-				stateType = PartitionState.valueOf(configElements[idx++]);
+				stateType = PartitionState.valueOf(configElements[idx++].toUpperCase());
 				break;
 			case OUTPUT:
 				stateType = OutputState.OUTPUT;
 				break;
 			case DOORS:
-				stateType = DoorsState.valueOf(configElements[idx++]);
+				stateType = DoorsState.valueOf(configElements[idx++].toUpperCase());
 				break;
 			}
 		} catch (Exception e) {
@@ -182,7 +182,7 @@ public class IntegraStateBindingConfig implements SatelBindingConfig {
 			switch (this.stateType.getObjectType()) {
 			case OUTPUT:
 				byte[] outputs = getObjectBitset((integraType == IntegraType.I256_PLUS) ? 32 : 16);
-				return ControlObjectCommand.buildMessage(switchOn ? OutputControl.on : OutputControl.off, outputs,
+				return ControlObjectCommand.buildMessage(switchOn ? OutputControl.ON : OutputControl.OFF, outputs,
 						userCode);
 
 			case DOORS:
@@ -195,32 +195,32 @@ public class IntegraStateBindingConfig implements SatelBindingConfig {
 				byte[] partitions = getObjectBitset(4);
 				switch ((PartitionState) this.stateType) {
 				// clear alarms on OFF command
-				case alarm:
-				case alarm_memory:
-				case fire_alarm:
-				case fire_alarm_memory:
-				case verified_alarms:
-				case warning_alarms:
+				case ALARM:
+				case ALARM_MEMORY:
+				case FIRE_ALARM:
+				case FIRE_ALARM_MEMORY:
+				case VERIFIED_ALARMS:
+				case WARNING_ALARMS:
 					if (switchOn) {
 						return null;
 					} else {
-						return ControlObjectCommand.buildMessage(PartitionControl.clear_alarm, partitions, userCode);
+						return ControlObjectCommand.buildMessage(PartitionControl.CLEAR_ALARM, partitions, userCode);
 					}
 
 					// arm or disarm, depending on command
-				case armed:
-				case really_armed:
-					return ControlObjectCommand.buildMessage(switchOn ? (force_arm ? PartitionControl.force_arm_mode_0
-							: PartitionControl.arm_mode_0) : PartitionControl.disarm, partitions, userCode);
-				case armed_mode_1:
-					return ControlObjectCommand.buildMessage(switchOn ? (force_arm ? PartitionControl.force_arm_mode_1
-							: PartitionControl.arm_mode_1) : PartitionControl.disarm, partitions, userCode);
-				case armed_mode_2:
-					return ControlObjectCommand.buildMessage(switchOn ? (force_arm ? PartitionControl.force_arm_mode_2
-							: PartitionControl.arm_mode_2) : PartitionControl.disarm, partitions, userCode);
-				case armed_mode_3:
-					return ControlObjectCommand.buildMessage(switchOn ? (force_arm ? PartitionControl.force_arm_mode_3
-							: PartitionControl.arm_mode_3) : PartitionControl.disarm, partitions, userCode);
+				case ARMED:
+				case REALLY_ARMED:
+					return ControlObjectCommand.buildMessage(switchOn ? (force_arm ? PartitionControl.FORCE_ARM_MODE_0
+							: PartitionControl.ARM_MODE_0) : PartitionControl.DISARM, partitions, userCode);
+				case ARMED_MODE_1:
+					return ControlObjectCommand.buildMessage(switchOn ? (force_arm ? PartitionControl.FORCE_ARM_MODE_1
+							: PartitionControl.ARM_MODE_1) : PartitionControl.DISARM, partitions, userCode);
+				case ARMED_MODE_2:
+					return ControlObjectCommand.buildMessage(switchOn ? (force_arm ? PartitionControl.FORCE_ARM_MODE_2
+							: PartitionControl.ARM_MODE_2) : PartitionControl.DISARM, partitions, userCode);
+				case ARMED_MODE_3:
+					return ControlObjectCommand.buildMessage(switchOn ? (force_arm ? PartitionControl.FORCE_ARM_MODE_3
+							: PartitionControl.ARM_MODE_3) : PartitionControl.DISARM, partitions, userCode);
 
 					// do nothing for other types of state
 				default:
