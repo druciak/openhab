@@ -8,6 +8,7 @@
  */
 package org.openhab.binding.satel.config;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -108,6 +109,9 @@ public class IntegraStateBindingConfig implements SatelBindingConfig {
 		if (idx < configElements.length) {
 			try {
 				objectNumber = Integer.parseInt(configElements[idx++]);
+				if (objectNumber < 1 || objectNumber > 256) {
+					throw new BindingConfigParseException(String.format("Invalid object number: {}", bindingConfig));
+				}
 			} catch (NumberFormatException e) {
 				throw new BindingConfigParseException(String.format("Invalid object number: {}", bindingConfig));
 			}
@@ -119,7 +123,7 @@ public class IntegraStateBindingConfig implements SatelBindingConfig {
 			for (String option : configElements[idx++].split(",")) {
 				if (option.contains("=")) {
 					String[] keyVal = option.split("=", 2);
-					options.put(keyVal[0], keyVal[1]);
+					options.put(keyVal[0].toUpperCase(), keyVal[1]);
 				} else {
 					options.put(option, "");
 				}
@@ -175,15 +179,18 @@ public class IntegraStateBindingConfig implements SatelBindingConfig {
 	 */
 	@Override
 	public SatelMessage handleCommand(Command command, IntegraType integraType, String userCode) {
-		if (command instanceof OnOffType && this.objectNumber > 0) {
+		if (command instanceof OnOffType) {
 			boolean switchOn = ((OnOffType) command == OnOffType.ON);
-			boolean force_arm = this.options.containsKey("force_arm");
+			boolean force_arm = this.options.containsKey("FORCE_ARM");
 
 			switch (this.stateType.getObjectType()) {
 			case OUTPUT:
-				byte[] outputs = getObjectBitset((integraType == IntegraType.I256_PLUS) ? 32 : 16);
-				return ControlObjectCommand.buildMessage(switchOn ? OutputControl.ON : OutputControl.OFF, outputs,
-						userCode);
+				if (this.objectNumber > 0) {
+					byte[] outputs = getObjectBitset((integraType == IntegraType.I256_PLUS) ? 32 : 16);
+					return ControlObjectCommand.buildMessage(switchOn ? OutputControl.ON : OutputControl.OFF, outputs,
+							userCode);
+				}
+				break;
 
 			case DOORS:
 				break;
@@ -251,8 +258,15 @@ public class IntegraStateBindingConfig implements SatelBindingConfig {
 
 	private byte[] getObjectBitset(int size) {
 		byte[] bitset = new byte[size];
-		int bitNbr = this.objectNumber - 1;
-		bitset[bitNbr / 8] = (byte) (1 << (bitNbr % 8));
+		if (this.objectNumber == 0) {
+			// set all bits
+			Arrays.fill(bitset, (byte) 0xff);
+			 
+		} else {
+			// set specific bit
+			int bitNbr = this.objectNumber - 1;
+			bitset[bitNbr / 8] = (byte) (1 << (bitNbr % 8));
+		}
 		return bitset;
 	}
 }
