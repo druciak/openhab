@@ -8,6 +8,10 @@
  */
 package org.openhab.binding.satel;
 
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
 import org.openhab.binding.satel.internal.event.SatelEvent;
 import org.openhab.binding.satel.internal.protocol.SatelMessage;
 import org.openhab.binding.satel.internal.types.IntegraType;
@@ -15,15 +19,16 @@ import org.openhab.core.binding.BindingConfig;
 import org.openhab.core.items.Item;
 import org.openhab.core.types.Command;
 import org.openhab.core.types.State;
+import org.openhab.model.item.binding.BindingConfigParseException;
 
 /**
- * Base interface that all Satel configuration classes must implement. Provides
- * methods to converts data between OpenHAB and Satel module.
+ * Base class that all Satel configuration classes must extend. Provides methods
+ * to converts data between OpenHAB and Satel module.
  * 
  * @author Krzysztof Goworek
  * @since 1.7.0
  */
-public interface SatelBindingConfig extends BindingConfig {
+public abstract class SatelBindingConfig implements BindingConfig {
 
 	/**
 	 * Converts data from {@link SatelEvent} to OpenHAB state of specified item.
@@ -34,7 +39,7 @@ public interface SatelBindingConfig extends BindingConfig {
 	 *            incoming event
 	 * @return new item state
 	 */
-	State convertEventToState(Item item, SatelEvent event);
+	public abstract State convertEventToState(Item item, SatelEvent event);
 
 	/**
 	 * Converts OpenHAB command to proper Satel message that changes state of
@@ -48,7 +53,7 @@ public interface SatelBindingConfig extends BindingConfig {
 	 *            user's password
 	 * @return a message to send
 	 */
-	SatelMessage handleCommand(Command command, IntegraType integraType, String userCode);
+	public abstract SatelMessage handleCommand(Command command, IntegraType integraType, String userCode);
 
 	/**
 	 * Returns message needed to get current state of bound object.
@@ -57,5 +62,86 @@ public interface SatelBindingConfig extends BindingConfig {
 	 *            type of connected Integra
 	 * @return a message to send
 	 */
-	SatelMessage buildRefreshMessage(IntegraType integraType);
+	public abstract SatelMessage buildRefreshMessage(IntegraType integraType);
+
+	/**
+	 * Helper class to iterate over elements of binding configuration.
+	 */
+	protected static class ConfigIterator implements Iterator<String> {
+		private String bindingConfig;
+		private String[] configElements;
+		private int idx;
+
+		public ConfigIterator(String bindingConfig) {
+			this.bindingConfig = bindingConfig;
+			this.configElements = bindingConfig.split(":");
+			this.idx = 0;
+		}
+
+		public String getBindingConfig() {
+			return this.bindingConfig;
+		}
+
+		public String nextUpperCase() {
+			return next().toUpperCase();
+		}
+		
+		public <T extends Enum<T>> T nextOfType(Class<T> enumType, String description) throws BindingConfigParseException {
+			try {
+				return Enum.valueOf(enumType, next().toUpperCase());
+			} catch (Exception e) {
+				throw new BindingConfigParseException(String.format("Invalid {}: {}", description, bindingConfig));
+			}
+		}
+
+		@Override
+		public boolean hasNext() {
+			return idx < configElements.length;
+		}
+
+		@Override
+		public String next() {
+			return configElements[idx++];
+		}
+
+		@Override
+		public void remove() {
+			// ignore
+		}
+	}
+
+	/**
+	 * Parses binding configuration options. This must be the last element of
+	 * the configuration.
+	 * 
+	 * @param iterator
+	 *            config iterator
+	 * @return parsed options as a map
+	 * @throws BindingConfigParseException
+	 *             in case there are more elements after options
+	 */
+	protected static Map<String, String> parseOptions(ConfigIterator iterator) throws BindingConfigParseException {
+		// parse options: comma separated pairs of <name>=<value>
+		Map<String, String> options = new HashMap<String, String>();
+
+		if (iterator.hasNext()) {
+
+			for (String option : iterator.next().split(",")) {
+				if (option.contains("=")) {
+					String[] keyVal = option.split("=", 2);
+					options.put(keyVal[0].toUpperCase(), keyVal[1]);
+				} else {
+					options.put(option, "");
+				}
+			}
+
+			if (iterator.hasNext()) {
+				// options are always the last element
+				// if anything left, throw exception
+				throw new BindingConfigParseException(String.format("Too many elements: {}",
+						iterator.getBindingConfig()));
+			}
+		}
+		return options;
+	}
 }

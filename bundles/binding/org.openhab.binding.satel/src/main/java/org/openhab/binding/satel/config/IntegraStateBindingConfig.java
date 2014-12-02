@@ -8,7 +8,6 @@
  */
 package org.openhab.binding.satel.config;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import org.openhab.binding.satel.SatelBindingConfig;
@@ -38,13 +37,13 @@ import org.openhab.core.types.State;
 import org.openhab.model.item.binding.BindingConfigParseException;
 
 /**
- * This class implements binding configuration for all items that represents
+ * This class implements binding configuration for all items that represent
  * Integra zones/partitions/outputs state.
  * 
  * @author Krzysztof Goworek
  * @since 1.7.0
  */
-public class IntegraStateBindingConfig implements SatelBindingConfig {
+public class IntegraStateBindingConfig extends SatelBindingConfig {
 
 	private static final DecimalType DECIMAL_ONE = new DecimalType(1);
 
@@ -69,13 +68,12 @@ public class IntegraStateBindingConfig implements SatelBindingConfig {
 	 *             in case of parse errors
 	 */
 	public static IntegraStateBindingConfig parseConfig(String bindingConfig) throws BindingConfigParseException {
-		String[] configElements = bindingConfig.split(":");
-		int idx = 0;
+		ConfigIterator iterator = new ConfigIterator(bindingConfig);
 		ObjectType objectType;
 
 		// parse object type, mandatory
 		try {
-			objectType = ObjectType.valueOf(configElements[idx++].toUpperCase());
+			objectType = ObjectType.valueOf(iterator.nextUpperCase());
 		} catch (Exception e) {
 			// wrong config type, skip parsing
 			return null;
@@ -85,29 +83,25 @@ public class IntegraStateBindingConfig implements SatelBindingConfig {
 		StateType stateType = null;
 		int objectNumber = 0;
 
-		try {
-			switch (objectType) {
-			case ZONE:
-				stateType = ZoneState.valueOf(configElements[idx++].toUpperCase());
-				break;
-			case PARTITION:
-				stateType = PartitionState.valueOf(configElements[idx++].toUpperCase());
-				break;
-			case OUTPUT:
-				stateType = OutputState.OUTPUT;
-				break;
-			case DOORS:
-				stateType = DoorsState.valueOf(configElements[idx++].toUpperCase());
-				break;
-			}
-		} catch (Exception e) {
-			throw new BindingConfigParseException(String.format("Invalid state type: {}", bindingConfig));
+		switch (objectType) {
+		case ZONE:
+			stateType = iterator.nextOfType(ZoneState.class, "zone state type");
+			break;
+		case PARTITION:
+			stateType = iterator.nextOfType(PartitionState.class, "partition state type");
+			break;
+		case OUTPUT:
+			stateType = OutputState.OUTPUT;
+			break;
+		case DOORS:
+			stateType = iterator.nextOfType(DoorsState.class, "doors state type");
+			break;
 		}
 
 		// parse object number, if provided
-		if (idx < configElements.length) {
+		if (iterator.hasNext()) {
 			try {
-				objectNumber = Integer.parseInt(configElements[idx++]);
+				objectNumber = Integer.parseInt(iterator.next());
 				if (objectNumber < 1 || objectNumber > 256) {
 					throw new BindingConfigParseException(String.format("Invalid object number: {}", bindingConfig));
 				}
@@ -116,25 +110,7 @@ public class IntegraStateBindingConfig implements SatelBindingConfig {
 			}
 		}
 
-		// parse options: comma separated pairs of <name>=<value>
-		Map<String, String> options = new HashMap<String, String>();
-		if (idx < configElements.length) {
-			for (String option : configElements[idx++].split(",")) {
-				if (option.contains("=")) {
-					String[] keyVal = option.split("=", 2);
-					options.put(keyVal[0].toUpperCase(), keyVal[1]);
-				} else {
-					options.put(option, "");
-				}
-			}
-		}
-
-		if (idx < configElements.length) {
-			// if anything left, throw exception
-			throw new BindingConfigParseException(String.format("Too many elements: {}", bindingConfig));
-		}
-
-		return new IntegraStateBindingConfig(stateType, objectNumber, options);
+		return new IntegraStateBindingConfig(stateType, objectNumber, parseOptions(iterator));
 	}
 
 	/**
