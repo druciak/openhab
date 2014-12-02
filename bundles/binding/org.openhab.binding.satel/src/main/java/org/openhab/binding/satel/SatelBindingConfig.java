@@ -17,6 +17,12 @@ import org.openhab.binding.satel.internal.protocol.SatelMessage;
 import org.openhab.binding.satel.internal.types.IntegraType;
 import org.openhab.core.binding.BindingConfig;
 import org.openhab.core.items.Item;
+import org.openhab.core.library.items.ContactItem;
+import org.openhab.core.library.items.NumberItem;
+import org.openhab.core.library.items.SwitchItem;
+import org.openhab.core.library.types.DecimalType;
+import org.openhab.core.library.types.OnOffType;
+import org.openhab.core.library.types.OpenClosedType;
 import org.openhab.core.types.Command;
 import org.openhab.core.types.State;
 import org.openhab.model.item.binding.BindingConfigParseException;
@@ -29,6 +35,8 @@ import org.openhab.model.item.binding.BindingConfigParseException;
  * @since 1.7.0
  */
 public abstract class SatelBindingConfig implements BindingConfig {
+
+	private static final DecimalType DECIMAL_ONE = new DecimalType(1);
 
 	/**
 	 * Converts data from {@link SatelEvent} to OpenHAB state of specified item.
@@ -85,8 +93,9 @@ public abstract class SatelBindingConfig implements BindingConfig {
 		public String nextUpperCase() {
 			return next().toUpperCase();
 		}
-		
-		public <T extends Enum<T>> T nextOfType(Class<T> enumType, String description) throws BindingConfigParseException {
+
+		public <T extends Enum<T>> T nextOfType(Class<T> enumType, String description)
+				throws BindingConfigParseException {
 			try {
 				return Enum.valueOf(enumType, next().toUpperCase());
 			} catch (Exception e) {
@@ -143,5 +152,17 @@ public abstract class SatelBindingConfig implements BindingConfig {
 			}
 		}
 		return options;
+	}
+
+	protected State booleanToState(Item item, boolean value) {
+		if (item instanceof ContactItem) {
+			return value ? OpenClosedType.OPEN : OpenClosedType.CLOSED;
+		} else if (item instanceof SwitchItem) {
+			return value ? OnOffType.ON : OnOffType.OFF;
+		} else if (item instanceof NumberItem) {
+			return value ? DECIMAL_ONE : DecimalType.ZERO;
+		}
+		
+		return null;
 	}
 }

@@ -17,8 +17,6 @@ import org.openhab.binding.satel.internal.protocol.SatelMessage;
 import org.openhab.binding.satel.internal.types.ControlType;
 import org.openhab.binding.satel.internal.types.OutputControl;
 import org.openhab.binding.satel.internal.types.OutputState;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Command class for commands that control (change) state of Integra objects,
@@ -29,10 +27,6 @@ import org.slf4j.LoggerFactory;
  * @since 1.7.0
  */
 public class ControlObjectCommand extends SatelCommand {
-	private static final Logger logger = LoggerFactory.getLogger(ControlObjectCommand.class);
-
-	private static final byte RESPONSE_CODE = (byte) 0xef;
-
 	private ControlType controlType;
 
 	/**
@@ -68,18 +62,9 @@ public class ControlObjectCommand extends SatelCommand {
 	 */
 	@Override
 	public void handleResponse(SatelMessage response) {
-		// validate response
-		if (response.getCommand() != RESPONSE_CODE) {
-			logger.error("Invalid response code: {}", response.getCommand());
-			return;
-		}
-		if (response.getPayload().length != 1) {
-			logger.error("Invalid payload length: {}", response.getPayload().length);
-			return;
-		}
 		if (commandSucceeded(response)) {
 			// force outputs refresh
-			BitSet newStates = new BitSet(48);
+			BitSet newStates = new BitSet();
 			// TODO generalize for all kinds of control
 			if (this.controlType instanceof OutputControl) {
 				newStates.set(OutputState.OUTPUT.getRefreshCommand());

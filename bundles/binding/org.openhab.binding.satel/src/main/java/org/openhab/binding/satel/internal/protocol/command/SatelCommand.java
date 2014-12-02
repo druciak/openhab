@@ -26,6 +26,8 @@ public abstract class SatelCommand {
 	 * Used in extended (INT-RS v2.xx) command version.
 	 */
 	protected static final byte[] EXTENDED_CMD_PAYLOAD = { 0x00 };
+	
+	private static final byte RESPONSE_CODE = (byte) 0xef;
 
 	private EventDispatcher eventDispatcher;
 
@@ -99,6 +101,16 @@ public abstract class SatelCommand {
 	}
 
 	protected boolean commandSucceeded(SatelMessage response) {
+		// validate response
+		if (response.getCommand() != RESPONSE_CODE) {
+			logger.error("Invalid response code: {}", response.getCommand());
+			return false;
+		}
+		if (response.getPayload().length != 1) {
+			logger.error("Invalid payload length: {}", response.getPayload().length);
+			return false;
+		}
+		
 		byte responseCode = response.getPayload()[0];
 		String errorMsg;
 

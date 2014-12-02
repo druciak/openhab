@@ -45,8 +45,6 @@ import org.openhab.model.item.binding.BindingConfigParseException;
  */
 public class IntegraStateBindingConfig extends SatelBindingConfig {
 
-	private static final DecimalType DECIMAL_ONE = new DecimalType(1);
-
 	private StateType stateType;
 	private int objectNumber;
 	private Map<String, String> options;
@@ -129,13 +127,7 @@ public class IntegraStateBindingConfig extends SatelBindingConfig {
 
 		if (this.objectNumber > 0) {
 			int bitNbr = this.objectNumber - 1;
-			if (item instanceof ContactItem) {
-				return stateEvent.isSet(bitNbr) ? OpenClosedType.OPEN : OpenClosedType.CLOSED;
-			} else if (item instanceof SwitchItem) {
-				return stateEvent.isSet(bitNbr) ? OnOffType.ON : OnOffType.OFF;
-			} else if (item instanceof NumberItem) {
-				return stateEvent.isSet(bitNbr) ? DECIMAL_ONE : DecimalType.ZERO;
-			}
+			return booleanToState(item, stateEvent.isSet(bitNbr));
 		} else {
 			if (item instanceof ContactItem) {
 				return (stateEvent.statesSet() > 0) ? OpenClosedType.OPEN : OpenClosedType.CLOSED;
