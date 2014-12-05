@@ -79,8 +79,7 @@ public class SatelBinding extends AbstractActiveBinding<SatelBindingProvider> im
 			return;
 		}
 
-		// for first refresh after connecting to the module, make full refresh
-		// after that check what has changed since last refresh
+		// get list of states that have changed
 		logger.trace("Sending 'get new states' command");
 		this.satelModule
 				.sendCommand(NewStatesCommand.buildMessage(this.satelModule.getIntegraType() == IntegraType.I256_PLUS));
@@ -155,6 +154,7 @@ public class SatelBinding extends AbstractActiveBinding<SatelBindingProvider> im
 			NewStatesEvent nse = (NewStatesEvent) event;
 			List<SatelMessage> commands = getRefreshCommands();
 			for (SatelMessage message : commands) {
+				// TODO update items also in case they are indefined
 				if (nse.isNew(message.getCommand())) {
 					this.satelModule.sendCommand(message);
 				}

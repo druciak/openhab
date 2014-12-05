@@ -13,8 +13,10 @@ import java.util.Set;
 import org.openhab.binding.satel.SatelBindingConfig;
 import org.openhab.binding.satel.SatelBindingProvider;
 import org.openhab.binding.satel.config.IntegraStateBindingConfig;
+import org.openhab.binding.satel.config.IntegraStatusBindingConfig;
 import org.openhab.core.items.Item;
 import org.openhab.core.library.items.ContactItem;
+import org.openhab.core.library.items.DateTimeItem;
 import org.openhab.core.library.items.NumberItem;
 import org.openhab.core.library.items.SwitchItem;
 import org.openhab.model.item.binding.AbstractGenericBindingProvider;
@@ -45,12 +47,13 @@ public class SatelGenericBindingProvider extends AbstractGenericBindingProvider 
 	 */
 	@Override
 	public void validateItemType(Item item, String bindingConfig) throws BindingConfigParseException {
-		if ((item instanceof NumberItem) || (item instanceof ContactItem) || (item instanceof SwitchItem)) {
+		if ((item instanceof NumberItem) || (item instanceof ContactItem) || (item instanceof SwitchItem)
+				|| (item instanceof DateTimeItem)) {
 			return;
 		}
 		throw new BindingConfigParseException("item '" + item.getName() + "' is of type '"
 				+ item.getClass().getSimpleName()
-				+ "', only Number- Contact- and Switch type is allowed - please check your *.items configuration");
+				+ "', only Number- Contact- DateTime- and Switch type is allowed - please check your *.items configuration");
 	}
 
 	/**
@@ -61,9 +64,9 @@ public class SatelGenericBindingProvider extends AbstractGenericBindingProvider 
 			throws BindingConfigParseException {
 		logger.trace("Processing binding configuration for item {}", item.getName());
 		super.processBindingConfiguration(context, item, bindingConfig);
-		
+
 		SatelBindingConfig bc = this.createBindingConfig(bindingConfig);
-		logger.debug("Adding binding configuration for item {}: {}", item.getName(), bc);
+		logger.trace("Adding binding configuration for item {}: {}", item.getName(), bc);
 		addBindingConfig(item, bc);
 	}
 
@@ -98,6 +101,12 @@ public class SatelGenericBindingProvider extends AbstractGenericBindingProvider 
 
 			// try IntegraStateBindingConfig first
 			bc = IntegraStateBindingConfig.parseConfig(bindingConfig);
+			if (bc != null) {
+				return bc;
+			}
+
+			// try IntegraStatusBindingConfig
+			bc = IntegraStatusBindingConfig.parseConfig(bindingConfig);
 			if (bc != null) {
 				return bc;
 			}

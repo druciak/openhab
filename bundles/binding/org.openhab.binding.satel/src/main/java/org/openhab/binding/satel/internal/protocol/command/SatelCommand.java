@@ -26,7 +26,7 @@ public abstract class SatelCommand {
 	 * Used in extended (INT-RS v2.xx) command version.
 	 */
 	protected static final byte[] EXTENDED_CMD_PAYLOAD = { 0x00 };
-	
+
 	private static final byte RESPONSE_CODE = (byte) 0xef;
 
 	private EventDispatcher eventDispatcher;
@@ -110,7 +110,7 @@ public abstract class SatelCommand {
 			logger.error("Invalid payload length: {}", response.getPayload().length);
 			return false;
 		}
-		
+
 		byte responseCode = response.getPayload()[0];
 		String errorMsg;
 
@@ -161,5 +161,21 @@ public abstract class SatelCommand {
 
 		logger.error(errorMsg);
 		return false;
+	}
+
+	protected static int bcdToInt(byte[] bytes, int offset, int size) {
+		int result = 0, digit;
+		int byteIdx = offset;
+		int digits = size * 2;
+		for (int i = 0; i < digits; ++i) {
+			if (i % 2 == 0)
+				digit = (bytes[byteIdx] >> 4) & 0x0f;
+			else {
+				digit = (bytes[byteIdx]) & 0x0f;
+				byteIdx += 1;
+			}
+			result = result * 10 + digit;
+		}
+		return result;
 	}
 }

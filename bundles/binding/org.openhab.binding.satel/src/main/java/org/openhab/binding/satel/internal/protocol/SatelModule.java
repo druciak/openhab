@@ -23,8 +23,10 @@ import org.openhab.binding.satel.internal.event.EventDispatcher;
 import org.openhab.binding.satel.internal.event.EventListener;
 import org.openhab.binding.satel.internal.event.IntegraVersionEvent;
 import org.openhab.binding.satel.internal.event.SatelEvent;
+import org.openhab.binding.satel.internal.protocol.command.ClearTroublesCommand;
 import org.openhab.binding.satel.internal.protocol.command.ControlObjectCommand;
 import org.openhab.binding.satel.internal.protocol.command.IntegraStateCommand;
+import org.openhab.binding.satel.internal.protocol.command.IntegraStatusCommand;
 import org.openhab.binding.satel.internal.protocol.command.IntegraVersionCommand;
 import org.openhab.binding.satel.internal.protocol.command.NewStatesCommand;
 import org.openhab.binding.satel.internal.protocol.command.SatelCommand;
@@ -212,6 +214,8 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 		for (ControlType ct : OutputControl.values()) {
 			this.supportedCommands.put(ct.getControlCommand(), new ControlObjectCommand(ct, this));
 		}
+		this.supportedCommands.put(IntegraStatusCommand.COMMAND_CODE, new IntegraStatusCommand(this));
+		this.supportedCommands.put(ClearTroublesCommand.COMMAND_CODE, new ClearTroublesCommand(this));
 	}
 
 	private SatelMessage readMessage() {
