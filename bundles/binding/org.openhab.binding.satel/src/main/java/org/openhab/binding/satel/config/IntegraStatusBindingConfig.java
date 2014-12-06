@@ -16,6 +16,7 @@ import org.openhab.binding.satel.internal.event.SatelEvent;
 import org.openhab.binding.satel.internal.protocol.SatelMessage;
 import org.openhab.binding.satel.internal.protocol.command.ClearTroublesCommand;
 import org.openhab.binding.satel.internal.protocol.command.IntegraStatusCommand;
+import org.openhab.binding.satel.internal.protocol.command.SetClockCommand;
 import org.openhab.binding.satel.internal.types.IntegraType;
 import org.openhab.core.items.Item;
 import org.openhab.core.library.types.DateTimeType;
@@ -122,6 +123,10 @@ public class IntegraStatusBindingConfig extends SatelBindingConfig {
 			default:
 				break;
 			}
+
+		} else if (this.statusType == StatusType.DATE_TIME && command instanceof DateTimeType) {
+			DateTimeType dateTime = (DateTimeType) command;
+			return SetClockCommand.buildMessage(dateTime.getCalendar(), userCode);
 		}
 
 		return null;

@@ -30,15 +30,16 @@ import org.openhab.binding.satel.internal.protocol.command.IntegraStatusCommand;
 import org.openhab.binding.satel.internal.protocol.command.IntegraVersionCommand;
 import org.openhab.binding.satel.internal.protocol.command.NewStatesCommand;
 import org.openhab.binding.satel.internal.protocol.command.SatelCommand;
+import org.openhab.binding.satel.internal.protocol.command.SetClockCommand;
 import org.openhab.binding.satel.internal.types.ControlType;
 import org.openhab.binding.satel.internal.types.DoorsState;
-import org.openhab.binding.satel.internal.types.ZoneState;
 import org.openhab.binding.satel.internal.types.IntegraType;
 import org.openhab.binding.satel.internal.types.OutputControl;
 import org.openhab.binding.satel.internal.types.OutputState;
-import org.openhab.binding.satel.internal.types.StateType;
 import org.openhab.binding.satel.internal.types.PartitionControl;
 import org.openhab.binding.satel.internal.types.PartitionState;
+import org.openhab.binding.satel.internal.types.StateType;
+import org.openhab.binding.satel.internal.types.ZoneState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -145,14 +146,15 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 	protected abstract CommunicationChannel connect();
 
 	/**
-	 * Starts communication. 
+	 * Starts communication.
 	 */
 	public synchronized void open() {
 		this.communicationWatchdog = new CommunicationWatchdog();
 	}
 
 	/**
-	 * Stops communication by disconnecting from the module and stopping all background tasks. 
+	 * Stops communication by disconnecting from the module and stopping all
+	 * background tasks.
 	 */
 	public synchronized void close() {
 		if (this.communicationWatchdog != null) {
@@ -163,7 +165,9 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 
 	/**
 	 * Enqueues specified command in send queue if not already enqueued.
-	 * @param cmd command to enqueue
+	 * 
+	 * @param cmd
+	 *            command to enqueue
 	 * @return <code>true</code> if operation succeeded
 	 */
 	public boolean sendCommand(SatelMessage cmd) {
@@ -216,6 +220,7 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 		}
 		this.supportedCommands.put(IntegraStatusCommand.COMMAND_CODE, new IntegraStatusCommand(this));
 		this.supportedCommands.put(ClearTroublesCommand.COMMAND_CODE, new ClearTroublesCommand(this));
+		this.supportedCommands.put(SetClockCommand.COMMAND_CODE, new SetClockCommand(this));
 	}
 
 	private SatelMessage readMessage() {

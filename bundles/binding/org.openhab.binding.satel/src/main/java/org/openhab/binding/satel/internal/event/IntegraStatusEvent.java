@@ -111,7 +111,7 @@ public class IntegraStatusEvent implements SatelEvent {
 	public String toString() {
 		return String
 				.format("IntegraStatusEvent: type = %d, time = %s, service mode = %b, troubles = %b, troubles memory = %b, ACU-100 = %b, INT-RX = %b, grade 2/3 = %b",
-						this.integraType, this.integraTime.toString(), this.serviceMode, this.troubles,
+						this.integraType, this.integraTime.getTime(), this.serviceMode, this.troubles,
 						this.troublesMemory, this.acu100Present, this.intRxPresent, this.grade23Set);
 	}
 }
