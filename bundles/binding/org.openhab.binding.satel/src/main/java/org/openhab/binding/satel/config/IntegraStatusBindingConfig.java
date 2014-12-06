@@ -21,6 +21,7 @@ import org.openhab.binding.satel.internal.types.IntegraType;
 import org.openhab.core.items.Item;
 import org.openhab.core.library.types.DateTimeType;
 import org.openhab.core.library.types.OnOffType;
+import org.openhab.core.library.types.StringType;
 import org.openhab.core.types.Command;
 import org.openhab.core.types.State;
 import org.openhab.model.item.binding.BindingConfigParseException;
@@ -124,9 +125,17 @@ public class IntegraStatusBindingConfig extends SatelBindingConfig {
 				break;
 			}
 
-		} else if (this.statusType == StatusType.DATE_TIME && command instanceof DateTimeType) {
-			DateTimeType dateTime = (DateTimeType) command;
-			return SetClockCommand.buildMessage(dateTime.getCalendar(), userCode);
+		} else if (this.statusType == StatusType.DATE_TIME) {
+			DateTimeType dateTime = null;
+			if (command instanceof StringType) {
+				dateTime = DateTimeType.valueOf(command.toString());
+			} else if (command instanceof DateTimeType) {
+				// not possible, DateTimeType is not a command
+				dateTime = (DateTimeType) command;
+			}
+			if (dateTime != null) {
+				return SetClockCommand.buildMessage(dateTime.getCalendar(), userCode);
+			}
 		}
 
 		return null;
