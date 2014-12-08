@@ -22,12 +22,14 @@ import org.openhab.binding.satel.internal.protocol.Ethm1Module;
 import org.openhab.binding.satel.internal.protocol.IntRSModule;
 import org.openhab.binding.satel.internal.protocol.SatelMessage;
 import org.openhab.binding.satel.internal.protocol.SatelModule;
+import org.openhab.binding.satel.internal.protocol.command.IntegraStatusCommand;
 import org.openhab.binding.satel.internal.protocol.command.NewStatesCommand;
 import org.openhab.binding.satel.internal.types.IntegraType;
 import org.openhab.core.binding.AbstractActiveBinding;
 import org.openhab.core.items.Item;
 import org.openhab.core.types.Command;
 import org.openhab.core.types.State;
+import org.openhab.core.types.UnDefType;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.cm.ManagedService;
 import org.slf4j.Logger;
@@ -151,13 +153,9 @@ public class SatelBinding extends AbstractActiveBinding<SatelBindingProvider> im
 
 		// refresh all states that have changed
 		if (event instanceof NewStatesEvent) {
-			NewStatesEvent nse = (NewStatesEvent) event;
-			List<SatelMessage> commands = getRefreshCommands();
+			List<SatelMessage> commands = getRefreshCommands((NewStatesEvent) event);
 			for (SatelMessage message : commands) {
-				// TODO update items also in case they are indefined
-				if (nse.isNew(message.getCommand())) {
-					this.satelModule.sendCommand(message);
-				}
+				this.satelModule.sendCommand(message);
 			}
 		}
 
@@ -186,7 +184,7 @@ public class SatelBinding extends AbstractActiveBinding<SatelBindingProvider> im
 		}
 	}
 
-	private List<SatelMessage> getRefreshCommands() {
+	private List<SatelMessage> getRefreshCommands(NewStatesEvent nse) {
 		logger.debug("Gathering refresh commands from all items");
 
 		List<SatelMessage> commands = new ArrayList<SatelMessage>();
@@ -197,7 +195,16 @@ public class SatelBinding extends AbstractActiveBinding<SatelBindingProvider> im
 				SatelBindingConfig itemConfig = provider.getItemConfig(itemName);
 				SatelMessage message = itemConfig.buildRefreshMessage(this.satelModule.getIntegraType());
 
-				if (message != null && !commands.contains(message)) {
+				if (message == null || commands.contains(message)) {
+					continue;
+				}
+
+				// either state has changed or this is status command, so likely
+				// RTC has changed or state is Undefined, so get the latest
+				// value from the module
+				Item item = provider.getItem(itemName);
+				if (item.getState() == UnDefType.UNDEF || (nse != null && nse.isNew(message.getCommand()))
+						|| message.getCommand() == IntegraStatusCommand.COMMAND_CODE) {
 					commands.add(message);
 				}
 			}
