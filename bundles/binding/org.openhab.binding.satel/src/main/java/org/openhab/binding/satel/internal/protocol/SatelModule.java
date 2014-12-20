@@ -15,9 +15,9 @@ import java.io.OutputStream;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.openhab.binding.satel.internal.event.EventDispatcher;
 import org.openhab.binding.satel.internal.event.EventListener;
@@ -61,10 +61,9 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 	private static final byte FRAME_SYNC_ESC = (byte) 0xf0;
 	private static final byte[] FRAME_START = { FRAME_SYNC, FRAME_SYNC };
 	private static final byte[] FRAME_END = { FRAME_SYNC, (byte) 0x0d };
-	private static final int QUEUE_SIZE = 10;
 
 	private final Map<Byte, SatelCommand> supportedCommands = new ConcurrentHashMap<Byte, SatelCommand>();
-	private final BlockingQueue<SatelMessage> sendQueue = new ArrayBlockingQueue<SatelMessage>(QUEUE_SIZE);
+	private final BlockingQueue<SatelMessage> sendQueue = new LinkedBlockingQueue<SatelMessage>();
 
 	private IntegraType integraType;
 	private int timeout;
