@@ -77,6 +77,6 @@ public class IntegraVersionEvent implements SatelEvent {
 	@Override
 	public String toString() {
 		return String.format("IntegraVersionEvent: type = %d, version = %s, language = %d, settingsInFlash = %b",
-				this.type, this.version, this.language, this.settingsInFlash);
+				this.type & 0xFF, this.version, this.language, this.settingsInFlash);
 	}
 }

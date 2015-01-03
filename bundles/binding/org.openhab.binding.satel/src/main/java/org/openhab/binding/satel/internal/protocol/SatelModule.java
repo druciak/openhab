@@ -190,7 +190,7 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 	public void incomingEvent(SatelEvent event) {
 		if (event instanceof IntegraVersionEvent) {
 			IntegraVersionEvent versionEvent = (IntegraVersionEvent) event;
-			this.integraType = IntegraType.valueOf(versionEvent.getType());
+			this.integraType = IntegraType.valueOf(versionEvent.getType() & 0xFF);
 			this.integraVersion = versionEvent.getVersion();
 			logger.info("Connection to {} initialized. Version: {}.", this.integraType.getName(), this.integraVersion);
 		}

@@ -64,6 +64,6 @@ public class IntegraVersionCommand extends SatelCommand {
 		// dispatch version event
 		this.getEventDispatcher().dispatchEvent(
 				new IntegraVersionEvent(response.getPayload()[0], verStr, response.getPayload()[12], response
-						.getPayload()[13] == 255));
+						.getPayload()[13] == (byte) 0xFF));
 	}
 }
