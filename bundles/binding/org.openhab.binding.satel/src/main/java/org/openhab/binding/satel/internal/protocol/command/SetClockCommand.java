@@ -49,7 +49,7 @@ public class SetClockCommand extends SatelCommand {
 	 */
 	public static SatelMessage buildMessage(Calendar dateTime, String userCode) {
 		byte[] dateTimeBytes = DATETIME_FORMAT.format(dateTime.getTime()).getBytes();
-		return new SatelMessage(COMMAND_CODE, ArrayUtils.addAll(dateTimeBytes, userCodeToBytes(userCode)));
+		return new SatelMessage(COMMAND_CODE, ArrayUtils.addAll(userCodeToBytes(userCode), dateTimeBytes));
 	}
 
 	/**
