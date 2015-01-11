@@ -300,7 +300,7 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 			for (byte b : message.getBytes()) {
 				os.write(b);
 				if (b == FRAME_SYNC) {
-					os.write(0xf0);
+					os.write(FRAME_SYNC_ESC);
 				}
 			}
 			os.write(FRAME_END);
