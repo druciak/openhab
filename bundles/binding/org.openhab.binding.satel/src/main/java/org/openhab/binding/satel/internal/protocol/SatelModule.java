@@ -286,7 +286,9 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 			return SatelMessage.fromBytes(baos.toByteArray());
 
 		} catch (IOException e) {
-			logger.error("Unexpected exception occurred during reading a message", e);
+			if (! Thread.interrupted()) {
+				logger.error("Unexpected exception occurred during reading a message", e);
+			}
 		}
 
 		return null;
@@ -308,7 +310,9 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 			return true;
 
 		} catch (IOException e) {
-			logger.error("Unexpected exception occurred during writing a message", e);
+			if (! Thread.interrupted()) {
+				logger.error("Unexpected exception occurred during writing a message", e);
+			}
 		}
 
 		return false;
@@ -451,9 +455,10 @@ public abstract class SatelModule extends EventDispatcher implements EventListen
 				long timePassed = (this.lastActivity == 0) ? 0 : System.currentTimeMillis() - this.lastActivity;
 
 				if (timePassed > SatelModule.this.timeout) {
-					logger.info("Send/receive timeout, disconnecting module.");
+					logger.error("Send/receive timeout, disconnecting module.");
 					stop();
 					this.thread.interrupt();
+					SatelModule.this.disconnect();
 				}
 			} else {
 				startCommunication();
