@@ -162,7 +162,7 @@ public abstract class SatelBindingConfig implements BindingConfig {
 		} else if (item instanceof NumberItem) {
 			return value ? DECIMAL_ONE : DecimalType.ZERO;
 		}
-		
+
 		return null;
 	}
 }
