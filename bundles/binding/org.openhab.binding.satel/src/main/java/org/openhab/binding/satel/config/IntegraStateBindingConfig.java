@@ -32,6 +32,8 @@ import org.openhab.core.library.items.SwitchItem;
 import org.openhab.core.library.types.DecimalType;
 import org.openhab.core.library.types.OnOffType;
 import org.openhab.core.library.types.OpenClosedType;
+import org.openhab.core.library.types.StopMoveType;
+import org.openhab.core.library.types.UpDownType;
 import org.openhab.core.types.Command;
 import org.openhab.core.types.State;
 import org.openhab.model.item.binding.BindingConfigParseException;
@@ -46,12 +48,12 @@ import org.openhab.model.item.binding.BindingConfigParseException;
 public class IntegraStateBindingConfig extends SatelBindingConfig {
 
 	private StateType stateType;
-	private int objectNumber;
+	private int[] objectNumbers;
 	private Map<String, String> options;
 
-	private IntegraStateBindingConfig(StateType stateType, int objectNumber, Map<String, String> options) {
+	private IntegraStateBindingConfig(StateType stateType, int[] objectNumbers, Map<String, String> options) {
 		this.stateType = stateType;
-		this.objectNumber = objectNumber;
+		this.objectNumbers = objectNumbers;
 		this.options = options;
 	}
 
@@ -79,7 +81,7 @@ public class IntegraStateBindingConfig extends SatelBindingConfig {
 
 		// parse state type, mandatory except for output
 		StateType stateType = null;
-		int objectNumber = 0;
+		int[] objectNumbers = {};
 
 		switch (objectType) {
 		case ZONE:
@@ -99,16 +101,21 @@ public class IntegraStateBindingConfig extends SatelBindingConfig {
 		// parse object number, if provided
 		if (iterator.hasNext()) {
 			try {
-				objectNumber = Integer.parseInt(iterator.next());
-				if (objectNumber < 1 || objectNumber > 256) {
-					throw new BindingConfigParseException(String.format("Invalid object number: {}", bindingConfig));
+				String[] objectNumbersStr = iterator.next().split(",");
+				objectNumbers = new int[objectNumbersStr.length];
+				for (int i = 0; i < objectNumbersStr.length; ++i) {
+					int objectNumber = Integer.parseInt(objectNumbersStr[i]);
+					if (objectNumber < 1 || objectNumber > 256) {
+						throw new BindingConfigParseException(String.format("Invalid object number: {}", bindingConfig));
+					}
+					objectNumbers[i] = objectNumber;
 				}
 			} catch (NumberFormatException e) {
 				throw new BindingConfigParseException(String.format("Invalid object number: {}", bindingConfig));
 			}
 		}
 
-		return new IntegraStateBindingConfig(stateType, objectNumber, parseOptions(iterator));
+		return new IntegraStateBindingConfig(stateType, objectNumbers, parseOptions(iterator));
 	}
 
 	/**
@@ -124,11 +131,11 @@ public class IntegraStateBindingConfig extends SatelBindingConfig {
 		if (stateEvent.getStateType() != this.stateType) {
 			return null;
 		}
-
-		if (this.objectNumber > 0) {
-			int bitNbr = this.objectNumber - 1;
+		
+		if (this.objectNumbers.length == 1) {
+			int bitNbr = this.objectNumbers[0] - 1;
 			return booleanToState(item, stateEvent.isSet(bitNbr));
-		} else {
+		} else if (this.objectNumbers.length == 0) {
 			if (item instanceof ContactItem) {
 				return (stateEvent.statesSet() > 0) ? OpenClosedType.OPEN : OpenClosedType.CLOSED;
 			} else if (item instanceof SwitchItem) {
@@ -146,7 +153,7 @@ public class IntegraStateBindingConfig extends SatelBindingConfig {
 	 */
 	@Override
 	public SatelMessage handleCommand(Command command, IntegraType integraType, String userCode) {
-		if (command instanceof OnOffType && this.objectNumber > 0) {
+		if (command instanceof OnOffType && this.objectNumbers.length == 1) {
 			boolean switchOn = ((OnOffType) command == OnOffType.ON);
 			boolean force_arm = this.options.containsKey("FORCE_ARM");
 
@@ -198,6 +205,16 @@ public class IntegraStateBindingConfig extends SatelBindingConfig {
 					break;
 				}
 			}
+		} else if (this.stateType.getObjectType() == ObjectType.OUTPUT && this.objectNumbers.length == 2) {
+			// roller shutter support
+			if (command == UpDownType.UP) {
+				// TODO implement me!
+			} else if (command == UpDownType.DOWN) {
+				// TODO implement me!
+			} else if (command == StopMoveType.STOP) {
+				byte[] outputs = getObjectBitset((integraType == IntegraType.I256_PLUS) ? 32 : 16);
+				return ControlObjectCommand.buildMessage(OutputControl.OFF, outputs, userCode);
+			}
 		}
 
 		return null;
@@ -216,14 +233,22 @@ public class IntegraStateBindingConfig extends SatelBindingConfig {
 	 */
 	@Override
 	public String toString() {
-		return String.format("IntegraStateBindingConfig: object = %s, state = %s, object nbr = %d, options = %s",
-				this.stateType.getObjectType(), this.stateType, this.objectNumber, this.options);
+		StringBuilder sb = new StringBuilder();
+		for (int i : this.objectNumbers) {
+			if (sb.length() > 0)
+				sb.append(",");
+			sb.append(Integer.toString(i));
+		}
+		return String.format("IntegraStateBindingConfig: object = %s, state = %s, object nbr = %s, options = %s",
+				this.stateType.getObjectType(), this.stateType, sb.toString(), this.options);
 	}
 
 	private byte[] getObjectBitset(int size) {
 		byte[] bitset = new byte[size];
-		int bitNbr = this.objectNumber - 1;
-		bitset[bitNbr / 8] = (byte) (1 << (bitNbr % 8));
+		for (int objectNumber : this.objectNumbers) {
+			int bitNbr = objectNumber - 1;
+			bitset[bitNbr / 8] |= (byte) (1 << (bitNbr % 8));
+		}
 		return bitset;
 	}
 }

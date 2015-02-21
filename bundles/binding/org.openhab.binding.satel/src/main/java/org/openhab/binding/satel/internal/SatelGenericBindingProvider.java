@@ -15,10 +15,6 @@ import org.openhab.binding.satel.SatelBindingProvider;
 import org.openhab.binding.satel.config.IntegraStateBindingConfig;
 import org.openhab.binding.satel.config.IntegraStatusBindingConfig;
 import org.openhab.core.items.Item;
-import org.openhab.core.library.items.ContactItem;
-import org.openhab.core.library.items.DateTimeItem;
-import org.openhab.core.library.items.NumberItem;
-import org.openhab.core.library.items.SwitchItem;
 import org.openhab.model.item.binding.AbstractGenericBindingProvider;
 import org.openhab.model.item.binding.BindingConfigParseException;
 import org.slf4j.Logger;
@@ -47,13 +43,6 @@ public class SatelGenericBindingProvider extends AbstractGenericBindingProvider 
 	 */
 	@Override
 	public void validateItemType(Item item, String bindingConfig) throws BindingConfigParseException {
-		if ((item instanceof NumberItem) || (item instanceof ContactItem) || (item instanceof SwitchItem)
-				|| (item instanceof DateTimeItem)) {
-			return;
-		}
-		throw new BindingConfigParseException("item '" + item.getName() + "' is of type '"
-				+ item.getClass().getSimpleName()
-				+ "', only Number- Contact- DateTime- and Switch type is allowed - please check your *.items configuration");
 	}
 
 	/**
