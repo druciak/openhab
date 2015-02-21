@@ -29,7 +29,7 @@ import org.openhab.model.item.binding.BindingConfigParseException;
 
 /**
  * Base class that all Satel configuration classes must extend. Provides methods
- * to converts data between OpenHAB and Satel module.
+ * to convert data between openHAB and Satel module.
  * 
  * @author Krzysztof Goworek
  * @since 1.7.0
@@ -39,7 +39,7 @@ public abstract class SatelBindingConfig implements BindingConfig {
 	private static final DecimalType DECIMAL_ONE = new DecimalType(1);
 
 	/**
-	 * Converts data from {@link SatelEvent} to OpenHAB state of specified item.
+	 * Converts data from {@link SatelEvent} to openHAB state of specified item.
 	 * 
 	 * @param item
 	 *            an item to get new state for
@@ -50,7 +50,7 @@ public abstract class SatelBindingConfig implements BindingConfig {
 	public abstract State convertEventToState(Item item, SatelEvent event);
 
 	/**
-	 * Converts OpenHAB command to proper Satel message that changes state of
+	 * Converts openHAB command to proper Satel message that changes state of
 	 * bound object (output, zone).
 	 * 
 	 * @param command
