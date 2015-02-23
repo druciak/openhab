@@ -49,6 +49,7 @@ public class SatelBinding extends AbstractActiveBinding<SatelBindingProvider> im
 	private long refreshInterval = 10000;
 	private String userCode;
 	private SatelModule satelModule = null;
+	private SatelMessage newStatesCommand = null;
 
 	/**
 	 * {@inheritDoc}
@@ -78,8 +79,11 @@ public class SatelBinding extends AbstractActiveBinding<SatelBindingProvider> im
 
 		// get list of states that have changed
 		logger.trace("Sending 'get new states' command");
-		this.satelModule
-				.sendCommand(NewStatesCommand.buildMessage(this.satelModule.getIntegraType() == IntegraType.I256_PLUS));
+		if (this.newStatesCommand == null) {
+			this.newStatesCommand = NewStatesCommand
+					.buildMessage(this.satelModule.getIntegraType() == IntegraType.I256_PLUS);
+		}
+		this.satelModule.sendCommand(this.newStatesCommand);
 	}
 
 	/**
@@ -97,7 +101,7 @@ public class SatelBinding extends AbstractActiveBinding<SatelBindingProvider> im
 		this.userCode = getStringValue(config, "user_code", null);
 
 		int timeout = getIntValue(config, "timeout", 5000);
-		String host = getStringValue(config, "host", null);;
+		String host = getStringValue(config, "host", null);
 		if (StringUtils.isNotBlank(host)) {
 			this.satelModule = new Ethm1Module(host, getIntValue(config, "port", 7094), timeout,
 					(String) config.get("encryption_key"));
@@ -178,6 +182,7 @@ public class SatelBinding extends AbstractActiveBinding<SatelBindingProvider> im
 			this.satelModule.close();
 			this.satelModule = null;
 		}
+		this.newStatesCommand = null;
 	}
 
 	private List<SatelMessage> getRefreshCommands(NewStatesEvent nse) {
