@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.openhab.binding.satel.internal.event.EventDispatcher;
-import org.openhab.binding.satel.internal.event.EventListener;
+import org.openhab.binding.satel.internal.event.SatelEventListener;
 import org.openhab.binding.satel.internal.event.IntegraVersionEvent;
 import org.openhab.binding.satel.internal.event.SatelEvent;
 import org.openhab.binding.satel.internal.protocol.command.ClearTroublesCommand;
@@ -54,7 +54,7 @@ import org.slf4j.LoggerFactory;
  * @author Krzysztof Goworek
  * @since 1.7.0
  */
-public abstract class SatelModule extends EventDispatcher implements EventListener {
+public abstract class SatelModule extends EventDispatcher implements SatelEventListener {
 	private static final Logger logger = LoggerFactory.getLogger(SatelModule.class);
 
 	private static final byte FRAME_SYNC = (byte) 0xfe;

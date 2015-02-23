@@ -152,7 +152,7 @@ public class IntegraStateBindingConfig extends SatelBindingConfig {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public SatelMessage handleCommand(Command command, IntegraType integraType, String userCode) {
+	public SatelMessage convertCommandToMessage(Command command, IntegraType integraType, String userCode) {
 		if (command instanceof OnOffType && this.objectNumbers.length == 1) {
 			boolean switchOn = ((OnOffType) command == OnOffType.ON);
 			boolean force_arm = this.options.containsKey("FORCE_ARM");

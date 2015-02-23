@@ -61,7 +61,7 @@ public abstract class SatelBindingConfig implements BindingConfig {
 	 *            user's password
 	 * @return a message to send
 	 */
-	public abstract SatelMessage handleCommand(Command command, IntegraType integraType, String userCode);
+	public abstract SatelMessage convertCommandToMessage(Command command, IntegraType integraType, String userCode);
 
 	/**
 	 * Returns message needed to get current state of bound object.

@@ -107,7 +107,7 @@ public class IntegraStatusBindingConfig extends SatelBindingConfig {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public SatelMessage handleCommand(Command command, IntegraType integraType, String userCode) {
+	public SatelMessage convertCommandToMessage(Command command, IntegraType integraType, String userCode) {
 		if (command instanceof OnOffType) {
 			boolean switchOn = ((OnOffType) command == OnOffType.ON);
 

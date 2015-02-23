@@ -15,7 +15,7 @@ import java.util.List;
 import org.apache.commons.lang.StringUtils;
 import org.openhab.binding.satel.SatelBindingConfig;
 import org.openhab.binding.satel.SatelBindingProvider;
-import org.openhab.binding.satel.internal.event.EventListener;
+import org.openhab.binding.satel.internal.event.SatelEventListener;
 import org.openhab.binding.satel.internal.event.NewStatesEvent;
 import org.openhab.binding.satel.internal.event.SatelEvent;
 import org.openhab.binding.satel.internal.protocol.Ethm1Module;
@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
  * @author Krzysztof Goworek
  * @since 1.7.0
  */
-public class SatelBinding extends AbstractActiveBinding<SatelBindingProvider> implements ManagedService, EventListener {
+public class SatelBinding extends AbstractActiveBinding<SatelBindingProvider> implements ManagedService, SatelEventListener {
 
 	private static final Logger logger = LoggerFactory.getLogger(SatelBinding.class);
 
@@ -134,7 +134,7 @@ public class SatelBinding extends AbstractActiveBinding<SatelBindingProvider> im
 			SatelBindingConfig itemConfig = provider.getItemConfig(itemName);
 			if (itemConfig != null) {
 				logger.trace("Sending internal command for item {}: {}", itemName, command);
-				SatelMessage message = itemConfig.handleCommand(command, this.satelModule.getIntegraType(),
+				SatelMessage message = itemConfig.convertCommandToMessage(command, this.satelModule.getIntegraType(),
 						this.userCode);
 				if (message != null) {
 					this.satelModule.sendCommand(message);
@@ -186,7 +186,7 @@ public class SatelBinding extends AbstractActiveBinding<SatelBindingProvider> im
 	}
 
 	private List<SatelMessage> getRefreshCommands(NewStatesEvent nse) {
-		logger.debug("Gathering refresh commands from all items");
+		logger.trace("Gathering refresh commands from all items");
 
 		List<SatelMessage> commands = new ArrayList<SatelMessage>();
 		for (SatelBindingProvider provider : providers) {
